@@ -1,0 +1,353 @@
+/* Global styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Home page styles */
+.home {
+  text-align: center;
+  padding: 50px 20px;
+}
+
+.home header {
+  margin-bottom: 40px;
+}
+
+.home h1 {
+  color: #2c3e50;
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+.home h2 {
+  color: #7f8c8d;
+  font-size: 1.3em;
+  font-weight: normal;
+  margin-bottom: 30px;
+}
+
+.home nav {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+}
+
+.nav-links a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.nav-links a:hover {
+  background-color: #e7f3ff;
+  border-color: #007bff;
+}
+
+/* Upload button styles */
+.upload-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin: 30px 0;
+}
+
+.upload-button-label {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.upload-button-label:hover {
+  background-color: #0056b3;
+}
+
+.upload-button input[type="file"] {
+  display: none;
+}
+
+.record-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  margin-left: 10px;
+}
+
+.record-button:hover {
+  background-color: #218838;
+}
+
+/* Analyze page styles */
+.analyze {
+  padding: 20px;
+}
+
+.analyze header {
+  margin-bottom: 30px;
+}
+
+.analyze header button {
+  background: none;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.analyze h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+/* Controls styles */
+.controls {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.controls button {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  margin: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.controls button:hover {
+  background-color: #e9ecef;
+}
+
+/* Feedback panel styles */
+.feedback-panel {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feedback-panel h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.feedback-panel h4 {
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.feedback-panel ul {
+  margin: 10px 0;
+}
+
+.feedback-panel li {
+  margin-bottom: 8px;
+}
+
+/* History page styles */
+.history {
+  padding: 20px;
+}
+
+.history header {
+  margin-bottom: 30px;
+}
+
+.history h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+/* Training page styles */
+.training {
+  padding: 20px;
+}
+
+.training header {
+  margin-bottom: 30px;
+}
+
+.training h1 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.training h2 {
+  color: #495057;
+  margin-bottom: 20px;
+}
+
+.training h3 {
+  color: #2c3e50;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+/* Drawing canvas styles */
+.drawing-canvas canvas {
+  border: 2px solid #007bff !important;
+}
+
+.drawing-tools {
+  margin-top: 10px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.drawing-tools button {
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.drawing-tools button:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.drawing-tools .save-button {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+  margin-left: auto;
+}
+
+.drawing-tools .save-button:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .App {
+    padding: 10px;
+  }
+
+  .home {
+    padding: 20px 10px;
+  }
+
+  .home h1 {
+    font-size: 2em;
+  }
+
+  .analyze {
+    padding: 10px;
+  }
+
+  .analyze > div {
+    flex-direction: column;
+  }
+
+  .feedback-panel {
+    width: 100% !important;
+    margin-top: 20px;
+  }
+}
+
+/* Skill practice page styles */
+.skill-practice {
+  padding: 20px;
+}
+
+.skill-practice header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.skill-practice h1 {
+  color: #2c3e50;
+  font-size: 2em;
+}
+
+.skill-practice h2 {
+  color: #34495e;
+  font-size: 1.5em;
+  margin-bottom: 15px;
+}
+
+.skill-practice main {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.skill-practice ul {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.skill-practice li {
+  margin-bottom: 10px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.skill-practice li:before {
+  content: "✓";
+  color: #28a745;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+/* Video player styles */
+.video-player video {
+  width: 100%;
+  height: auto;
+  max-width: 640px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
