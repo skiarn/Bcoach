@@ -7,9 +7,11 @@ interface ControlsProps {
   onPause: () => void
   onSpeedChange: (speed: number) => void
   onSeek: (time: number) => void
-  onToggleDrawing: () => void
-  showDrawingCanvas: boolean
   videoLoaded: boolean
+  onToggleDrawing?: () => void
+  showDrawingCanvas?: boolean
+  onToggleFullscreen?: () => void
+  isFullscreen?: boolean
 }
 
 function Controls({
@@ -21,10 +23,14 @@ function Controls({
   onPause,
   onSpeedChange,
   onSeek,
+  videoLoaded,
   onToggleDrawing,
   showDrawingCanvas,
-  videoLoaded
+  onToggleFullscreen,
+  isFullscreen = false,
 }: ControlsProps): JSX.Element {
+  const sliderMax = Math.max(duration, currentTime, 0.1)
+
   const formatTime = (time: number): string => {
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
@@ -32,53 +38,60 @@ function Controls({
   }
 
   return (
-    <div className="controls" style={{ marginTop: '10px' }}>
-      {/* Playback Controls */}
-      <div style={{ marginBottom: '10px' }}>
-        <button onClick={isPlaying ? onPause : onPlay}>
-          {isPlaying ? '⏸️' : '▶️'}
+    <div className="controls">
+      {/* Row 1: play + time + fullscreen */}
+      <div className="controls-row controls-row--top">
+        <button className="controls-btn controls-btn--play" onClick={isPlaying ? onPause : onPlay}>
+          {isPlaying ? '⏸' : '▶'}
         </button>
-        <span style={{ margin: '0 10px' }}>
+
+        <span className="controls-time">
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
+
+        <div className="controls-right-actions">
+          {onToggleDrawing && (
+            <button className="controls-btn" onClick={onToggleDrawing}>
+              {showDrawingCanvas ? '✏️ Stäng' : '✏️ Rita'}
+            </button>
+          )}
+          {onToggleFullscreen && videoLoaded && (
+            <button className="controls-btn controls-btn--fullscreen" onClick={onToggleFullscreen} title={isFullscreen ? 'Avsluta fullskärm' : 'Fullskärm'}>
+              {isFullscreen ? (
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Progress Bar */}
-      <div style={{ marginBottom: '10px' }}>
+      {/* Row 2: seek bar */}
+      <div className="controls-row">
         <input
+          className="controls-seek"
           type="range"
           min="0"
-          max={duration || 0}
+          max={sliderMax}
+          step={0.1}
           value={currentTime}
           onChange={(e) => onSeek(Number(e.target.value))}
-          style={{ width: '100%' }}
         />
       </div>
 
-      {/* Speed Controls */}
-      <div style={{ marginBottom: '10px' }}>
-        <button onClick={() => onSpeedChange(0.5)} style={{ opacity: playbackRate === 0.5 ? 1 : 0.5 }}>
-          0.5x
-        </button>
-        <button onClick={() => onSpeedChange(1)} style={{ opacity: playbackRate === 1 ? 1 : 0.5 }}>
-          1x
-        </button>
-        <button onClick={() => onSpeedChange(1.5)} style={{ opacity: playbackRate === 1.5 ? 1 : 0.5 }}>
-          1.5x
-        </button>
-        <button onClick={() => onSpeedChange(2)} style={{ opacity: playbackRate === 2 ? 1 : 0.5 }}>
-          2x
-        </button>
-      </div>
-
-      {/* Drawing Toggle */}
-      {videoLoaded && (
-        <div>
-          <button onClick={onToggleDrawing}>
-            {showDrawingCanvas ? '🔴 Stäng ritverktyg' : '✏️ Öppna ritverktyg'}
+      {/* Row 3: speed controls */}
+      <div className="controls-row">
+        {([0.5, 1, 1.5, 2] as const).map((speed) => (
+          <button
+            key={speed}
+            className={`controls-btn controls-btn--speed ${playbackRate === speed ? 'active' : ''}`}
+            onClick={() => onSpeedChange(speed)}
+          >
+            {speed}x
           </button>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   )
 }

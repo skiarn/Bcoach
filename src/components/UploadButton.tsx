@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 interface UploadButtonProps {
   onVideoSelect: (video: File | Blob, url: string) => void
@@ -11,6 +11,24 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
+  // Attach the live camera stream to the preview element once it mounts
+  useEffect(() => {
+    if (isRecording && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current
+    }
+  }, [isRecording])
+
+  const getSupportedMimeType = (): string | undefined => {
+    const candidates = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm',
+      'video/mp4'
+    ]
+
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type))
+  }
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && file.type.startsWith('video/')) {
@@ -22,18 +40,16 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }, // Use back camera on mobile
+        video: true,
         audio: true
       })
 
       streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-      }
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9'
-      })
+      const supportedMimeType = getSupportedMimeType()
+      const mediaRecorder = supportedMimeType
+        ? new MediaRecorder(stream, { mimeType: supportedMimeType })
+        : new MediaRecorder(stream)
 
       mediaRecorderRef.current = mediaRecorder
       chunksRef.current = []
@@ -45,7 +61,8 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
       }
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' })
+        const blobType = mediaRecorder.mimeType || 'video/webm'
+        const blob = new Blob(chunksRef.current, { type: blobType })
         const url = URL.createObjectURL(blob)
         onVideoSelect(blob, url)
 
@@ -70,46 +87,51 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
     }
   }
 
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
   return (
-    <div className="upload-button">
-      <input
-        type="file"
-        accept="video/*"
-        onChange={handleFileSelect}
-        style={{ display: 'none' }}
-        id="video-upload"
-      />
-      <label htmlFor="video-upload" className="upload-button-label">
-        Ladda upp video
-      </label>
-
-      {isMobile && (
-        <>
-          <button
-            type="button"
-            onClick={isRecording ? stopRecording : startRecording}
-            className="record-button"
-          >
-            {isRecording ? 'Stoppa inspelning' : 'Spela in video'}
-          </button>
-
-          {isRecording && (
-            <div style={{ marginTop: '10px' }}>
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                style={{ width: '300px', height: '200px', border: '1px solid #ccc' }}
-              />
-              <p>🎥 Inspelning pågår...</p>
-            </div>
-          )}
-        </>
+    <>
+      {isRecording && (
+        <div className="recording-overlay">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="recording-preview"
+          />
+          <div className="recording-hud">
+            <span className="recording-indicator">● REC</span>
+            <button
+              type="button"
+              onClick={stopRecording}
+              className="recording-stop-btn"
+            >
+              ⏹ Stoppa inspelning
+            </button>
+          </div>
+        </div>
       )}
-    </div>
+
+      <div className="upload-button">
+        <input
+          type="file"
+          accept="video/*"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+          id="video-upload"
+        />
+        <label htmlFor="video-upload" className="upload-button-label">
+          Ladda upp video
+        </label>
+
+        <button
+          type="button"
+          onClick={startRecording}
+          className="record-button"
+        >
+          Spela in video
+        </button>
+      </div>
+    </>
   )
 }
 

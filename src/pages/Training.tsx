@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import AppNav from '../components/AppNav.tsx'
 import { skills } from '../utils/skills.ts'
 
 function Training(): JSX.Element {
@@ -9,12 +10,9 @@ function Training(): JSX.Element {
 
   return (
     <div className="training">
+      <AppNav />
       <header>
-        <h1>🏐 Träning - Volleyboll Tekniker</h1>
-        <nav className="nav-links">
-          <Link to="/">Hem</Link>
-          <Link to="/history">Mina videos</Link>
-        </nav>
+        <h1>🏐 Träning</h1>
       </header>
       <main>
         <h2>Välj en teknik att öva på</h2>

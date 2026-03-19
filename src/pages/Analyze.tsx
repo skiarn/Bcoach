@@ -1,19 +1,24 @@
-import { useState, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import VideoPlayer from '../components/VideoPlayer.tsx'
 import DrawingCanvas from '../components/DrawingCanvas.tsx'
+import ShapeOverlay from '../components/ShapeOverlay.tsx'
 import Controls from '../components/Controls.tsx'
 import FeedbackPanel from '../components/FeedbackPanel.tsx'
 import useLocalStorage from '../hooks/useLocalStorage.ts'
-import { Skill } from '../utils/skills.ts'
+import { Skill, skills } from '../utils/skills.ts'
+import { getVideoDisplayName } from '../utils/helpers.ts'
 
 interface VideoAnalysis {
   id: string
   videoUrl: string
   videoName: string
-  shapes: any[]
+  shapes: Shape[]
   feedback: string[]
+  nextSteps: string[]
   timestamp: number
+  skillName?: string
+  skillType?: string
 }
 
 interface AnalyzeProps {
@@ -23,22 +28,34 @@ interface AnalyzeProps {
 }
 
 type Tool = "line" | "circle" | "none";
+type AnalyzeStep = 'draw' | 'feedback' | 'nextSteps' | 'save'
 
 interface Shape {
+  id: string
   type: "line" | "circle";
   startX: number;
   startY: number;
   endX: number;
   endY: number;
+  sourceWidth?: number;
+  sourceHeight?: number;
+  visibleFrom?: number;
+  visibleTo?: number;
 }
 
 function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: AnalyzeProps): JSX.Element {
+  const navigate = useNavigate()
   const location = useLocation()
-  const skill: Skill | undefined = location.state?.skill
+  const stateSkill: Skill | undefined = location.state?.skill
+  const existingAnalysis = location.state?.analysis as VideoAnalysis | undefined
+  const existingAnalysisId = location.state?.analysisId as string | undefined
+  const skill = stateSkill ?? skills.find(
+    (entry) => entry.name === existingAnalysis?.skillName && entry.type === existingAnalysis?.skillType
+  )
   const videoUrl = propVideoUrl || location.state?.videoUrl
   const videoFile = propVideoFile || location.state?.videoFile
 
-  if (!videoUrl || !videoFile) {
+  if (!videoUrl) {
     return (
       <div className="analyze">
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -51,22 +68,67 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
     )
   }
   const videoRef = useRef<HTMLVideoElement>(null)
+  const videoContainerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [videoDisplayWidth, setVideoDisplayWidth] = useState(0)
+  const [videoDisplayHeight, setVideoDisplayHeight] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [videoLoaded, setVideoLoaded] = useState(false)
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
   const [tool, setTool] = useState<Tool>("line");
+  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null)
   const [customFeedback, setCustomFeedback] = useState<string[]>([])
+  const [customNextSteps, setCustomNextSteps] = useState<string[]>([])
+  const [currentStep, setCurrentStep] = useState<AnalyzeStep>('draw')
+  const [isSaved, setIsSaved] = useState(false)
+  const [analyses, setAnalyses] = useLocalStorage<VideoAnalysis[]>('beach-volley-analyses', [])
 
-  const videoName = videoFile instanceof File ? videoFile.name : 'Inspelad video'
+  const rawVideoName = videoFile instanceof File
+    ? videoFile.name
+    : (location.state?.videoName || existingAnalysis?.videoName)
+
+  const videoName = useMemo(
+    () => getVideoDisplayName(rawVideoName, existingAnalysis?.timestamp),
+    [rawVideoName, existingAnalysis?.timestamp]
+  )
+
+  useEffect(() => {
+    if (!existingAnalysis) return
+
+    setShapes(existingAnalysis.shapes ?? [])
+    setCustomFeedback(existingAnalysis.feedback ?? [])
+    setCustomNextSteps(existingAnalysis.nextSteps ?? [])
+  }, [existingAnalysis])
+
+  const getSafeDuration = (): number => {
+    if (!videoRef.current) return 0
+
+    const nativeDuration = videoRef.current.duration
+    if (Number.isFinite(nativeDuration) && nativeDuration > 0) {
+      return nativeDuration
+    }
+
+    const seekable = videoRef.current.seekable
+    if (seekable.length > 0) {
+      const seekableEnd = seekable.end(seekable.length - 1)
+      if (Number.isFinite(seekableEnd) && seekableEnd > 0) {
+        return seekableEnd
+      }
+    }
+
+    return 0
+  }
 
   // Video event handlers
   const handlePlay = () => {
     if (videoRef.current) {
-      videoRef.current.play()
-      setIsPlaying(true)
+      void videoRef.current.play().catch(() => {
+        setIsPlaying(false)
+      })
     }
   }
 
@@ -86,13 +148,25 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime)
+      const nextTime = videoRef.current.currentTime
+      setCurrentTime(nextTime)
+
+      const safeDuration = getSafeDuration()
+      if (safeDuration > 0 && duration <= 0) {
+        setDuration(safeDuration)
+      }
+
+      if (nextTime > duration) {
+        setDuration(nextTime)
+      }
     }
   }
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
-      setDuration(videoRef.current.duration)
+      setDuration(getSafeDuration())
+      setVideoDisplayWidth(videoRef.current.offsetWidth)
+      setVideoDisplayHeight(videoRef.current.offsetHeight)
       setVideoLoaded(true)
     }
   }
@@ -100,7 +174,158 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
   const handleSeek = (time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time
+      setCurrentTime(time)
     }
+  }
+
+  const handleToggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (videoContainerRef.current) {
+          await videoContainerRef.current.requestFullscreen()
+        }
+      } else {
+        await document.exitFullscreen()
+      }
+    } catch (error) {
+      console.error('Fullscreen toggle failed:', error)
+    }
+  }
+
+  const formatTime = (timeInSeconds: number): string => {
+    const safeTime = Math.max(0, timeInSeconds)
+    const minutes = Math.floor(safeTime / 60)
+    const seconds = Math.floor(safeTime % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  const selectedShape = shapes.find((shape) => shape.id === selectedShapeId) ?? null
+
+  useEffect(() => {
+    const updateVideoDisplaySize = () => {
+      if (!videoRef.current) return
+
+      setVideoDisplayWidth(videoRef.current.offsetWidth)
+      setVideoDisplayHeight(videoRef.current.offsetHeight)
+    }
+
+    updateVideoDisplaySize()
+
+    const video = videoRef.current
+    let resizeObserver: ResizeObserver | null = null
+
+    if (video && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updateVideoDisplaySize()
+      })
+
+      resizeObserver.observe(video)
+    }
+
+    window.addEventListener('resize', updateVideoDisplaySize)
+    const handleFullscreenChange = () => {
+      const activeElement = document.fullscreenElement
+      setIsFullscreen(activeElement === videoContainerRef.current)
+      updateVideoDisplaySize()
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+    return () => {
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', updateVideoDisplaySize)
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [videoLoaded])
+
+  useEffect(() => {
+    if (!videoRef.current) return
+
+    const video = videoRef.current
+
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
+    const onEnded = () => {
+      setIsPlaying(false)
+      const actualEndTime = video.currentTime
+      setCurrentTime(actualEndTime)
+
+      // Some recordings report a longer metadata duration than what actually plays.
+      // When ended fires, trust the real end time so the progress reaches 100%.
+      setDuration((previousDuration) => {
+        if (previousDuration <= 0) return actualEndTime
+        if (previousDuration - actualEndTime > 0.25) return actualEndTime
+        return Math.max(previousDuration, actualEndTime)
+      })
+    }
+
+    video.addEventListener('play', onPlay)
+    video.addEventListener('pause', onPause)
+    video.addEventListener('ended', onEnded)
+
+    return () => {
+      video.removeEventListener('play', onPlay)
+      video.removeEventListener('pause', onPause)
+      video.removeEventListener('ended', onEnded)
+    }
+  }, [videoLoaded])
+
+  useEffect(() => {
+    if (shapes.length === 0) {
+      setSelectedShapeId(null)
+      return
+    }
+
+    if (!selectedShapeId || !shapes.some((shape) => shape.id === selectedShapeId)) {
+      setSelectedShapeId(shapes[shapes.length - 1].id)
+    }
+  }, [shapes, selectedShapeId])
+
+  useEffect(() => {
+    if (currentStep !== 'draw' && showDrawingCanvas) {
+      setShowDrawingCanvas(false)
+    }
+
+    if (currentStep === 'draw' && !showDrawingCanvas) {
+      setShowDrawingCanvas(true)
+    }
+
+    if (currentStep !== 'draw' && document.fullscreenElement === videoContainerRef.current) {
+      void document.exitFullscreen().catch(() => {
+        // Ignore exit fullscreen failure when leaving draw step.
+      })
+    }
+  }, [currentStep, showDrawingCanvas])
+
+  const updateSelectedShapeRange = (field: 'visibleFrom' | 'visibleTo', value: number) => {
+    if (!selectedShapeId) return
+
+    setShapes((prevShapes) =>
+      prevShapes.map((shape) => {
+        if (shape.id !== selectedShapeId) {
+          return shape
+        }
+
+        const safeDuration = duration > 0 ? duration : value
+        const nextValue = Math.max(0, Math.min(value, safeDuration))
+        const currentFrom = shape.visibleFrom ?? 0
+        const currentTo = shape.visibleTo ?? safeDuration
+
+        if (field === 'visibleFrom') {
+          return {
+            ...shape,
+            visibleFrom: Math.min(nextValue, currentTo),
+            visibleTo: currentTo,
+          }
+        }
+
+        return {
+          ...shape,
+          visibleFrom: currentFrom,
+          visibleTo: Math.max(nextValue, currentFrom),
+        }
+      })
+    )
   }
 
   // Save analysis
@@ -111,21 +336,34 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
       "Försök att följa igenom slaget mer"
     ])
 
+    const targetId = existingAnalysisId ?? existingAnalysis?.id
+    const analysisId = targetId ?? Date.now().toString()
+
     const newAnalysis: VideoAnalysis = {
-      id: Date.now().toString(),
+      id: analysisId,
       videoUrl,
       videoName,
       shapes,
       feedback,
-      timestamp: Date.now()
+      nextSteps: customNextSteps,
+      timestamp: Date.now(),
+      skillName: skill?.name,
+      skillType: skill?.type,
+    }
+
+    if (targetId) {
+      setAnalyses(analyses.map((analysis) => (analysis.id === targetId ? newAnalysis : analysis)))
+      setIsSaved(true)
+      return
     }
 
     setAnalyses([newAnalysis, ...analyses])
-    alert('Analys sparad! Du kan se den under "Mina videos"')
+    setIsSaved(true)
   }
 
   const clearCanvas = () => {
     setShapes([]);
+    setSelectedShapeId(null)
   };
 
   const undoLastShape = () => {
@@ -136,6 +374,37 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
     handleSaveAnalysis(shapes);
   };
 
+  const stepOrder: AnalyzeStep[] = ['draw', 'feedback', 'nextSteps', 'save']
+  const stepIndex = stepOrder.indexOf(currentStep)
+  const showVideoWorkspace = currentStep === 'draw'
+
+  const goToPreviousStep = () => {
+    if (stepIndex <= 0) return
+    setCurrentStep(stepOrder[stepIndex - 1])
+  }
+
+  const goToNextStep = () => {
+    if (stepIndex >= stepOrder.length - 1) return
+    setCurrentStep(stepOrder[stepIndex + 1])
+  }
+
+  const getStepTitle = () => {
+    if (currentStep === 'draw') return 'Steg 1: Rita och redigera video'
+    if (currentStep === 'feedback') return 'Steg 2: Fyll i Feedback'
+    if (currentStep === 'nextSteps') return 'Steg 3: Välj Nästa steg'
+    return 'Steg 4: Spara analys'
+  }
+
+  const getHomeSelectionSearch = (): string => {
+    if (!skill) return ''
+
+    const params = new URLSearchParams()
+    params.set('sport', skill.type)
+    params.set('skill', skill.name)
+    params.set('skillType', skill.type)
+    return params.toString()
+  }
+
   return (
     <div className="analyze">
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -144,48 +413,86 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
         <div></div>
       </header>
 
-      <div style={{ position: 'relative', display: 'flex', gap: '20px' }}>
-        {/* Video Section */}
-        <div style={{ flex: 1, position: 'relative' }}>
-          <VideoPlayer
-            ref={videoRef}
-            src={videoUrl}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-          />
+      <div className="analyze-stepper" style={{ marginBottom: '16px' }}>
+        <div className={`analyze-step ${currentStep === 'draw' ? 'active' : ''}`}>1. Rita</div>
+        <div className={`analyze-step ${currentStep === 'feedback' ? 'active' : ''}`}>2. Feedback</div>
+        <div className={`analyze-step ${currentStep === 'nextSteps' ? 'active' : ''}`}>3. Nästa steg</div>
+        <div className={`analyze-step ${currentStep === 'save' ? 'active' : ''}`}>4. Spara</div>
+      </div>
 
-          {showDrawingCanvas && videoLoaded && videoRef.current && videoRef.current.offsetWidth > 0 && videoRef.current.offsetHeight > 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '0',
-              left: '0',
-              width: '100%',
-              height: '100%',
-              zIndex: 10
-            }}>
-              <DrawingCanvas
-                width={videoRef.current.offsetWidth}
-                height={videoRef.current.offsetHeight}
-                tool={tool}
-                shapes={shapes}
-                onShapesChange={setShapes}
+      <div style={{ position: 'relative', display: showVideoWorkspace ? 'flex' : 'block', gap: '20px' }}>
+        {/* Video Section */}
+        {showVideoWorkspace && (
+          <div style={{ flex: 1 }}>
+          <div
+            ref={videoContainerRef}
+            className={`video-stage ${isFullscreen ? 'is-fullscreen' : ''}`}
+          >
+            <VideoPlayer
+              ref={videoRef}
+              src={videoUrl}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              isFullscreen={isFullscreen}
+            />
+
+            {showDrawingCanvas && videoLoaded && videoDisplayWidth > 0 && videoDisplayHeight > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                zIndex: 10
+              }}>
+                <DrawingCanvas
+                  width={videoDisplayWidth}
+                  height={videoDisplayHeight}
+                  tool={tool}
+                  shapes={shapes}
+                  onShapesChange={setShapes}
+                  currentTime={currentTime}
+                  duration={duration}
+                />
+              </div>
+            )}
+
+            {!showDrawingCanvas && videoLoaded && videoDisplayWidth > 0 && videoDisplayHeight > 0 && shapes.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                zIndex: 10
+              }}>
+                <ShapeOverlay
+                  width={videoDisplayWidth}
+                  height={videoDisplayHeight}
+                  shapes={shapes}
+                  currentTime={currentTime}
+                />
+              </div>
+            )}
+
+            <div className="video-controls-overlay">
+              <Controls
+                isPlaying={isPlaying}
+                playbackRate={playbackRate}
+                currentTime={currentTime}
+                duration={duration}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSpeedChange={handleSpeedChange}
+                onSeek={handleSeek}
+                videoLoaded={videoLoaded}
+                onToggleDrawing={() => setShowDrawingCanvas(!showDrawingCanvas)}
+                showDrawingCanvas={showDrawingCanvas}
+                onToggleFullscreen={handleToggleFullscreen}
+                isFullscreen={isFullscreen}
               />
             </div>
-          )}
-
-          <Controls
-            isPlaying={isPlaying}
-            playbackRate={playbackRate}
-            currentTime={currentTime}
-            duration={duration}
-            onPlay={handlePlay}
-            onPause={handlePause}
-            onSpeedChange={handleSpeedChange}
-            onSeek={handleSeek}
-            onToggleDrawing={() => setShowDrawingCanvas(!showDrawingCanvas)}
-            showDrawingCanvas={showDrawingCanvas}
-            videoLoaded={videoLoaded}
-          />
+          </div>
 
           {showDrawingCanvas && (
             <div className="drawing-tools">
@@ -194,16 +501,140 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
               <button onClick={() => setTool("none")}>None</button>
               <button onClick={undoLastShape}>Undo</button>
               <button onClick={clearCanvas}>Clear</button>
-              <button onClick={saveAnalysis} className="save-button">
-                💾 Spara analys
-              </button>
             </div>
           )}
-        </div>
 
-        {/* Feedback Section */}
-        <div style={{ width: '300px' }}>
-          <FeedbackPanel skill={skill} onFeedbackChange={setCustomFeedback} />
+          {showDrawingCanvas && shapes.length > 0 && (
+            <div className="shape-timeline-editor">
+              <h3>Visa ritningar under delar av videon</h3>
+
+              <div className="shape-selector-list">
+                {shapes.map((shape, index) => (
+                  <button
+                    key={shape.id}
+                    type="button"
+                    className={selectedShapeId === shape.id ? 'active' : ''}
+                    onClick={() => setSelectedShapeId(shape.id)}
+                  >
+                    {shape.type === 'line' ? 'Linje' : 'Cirkel'} #{index + 1}
+                  </button>
+                ))}
+              </div>
+
+              {selectedShape && (
+                <div className="shape-range-controls">
+                  <label>
+                    Start: {formatTime(selectedShape.visibleFrom ?? 0)}
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration || 0}
+                      step={0.1}
+                      value={selectedShape.visibleFrom ?? 0}
+                      onChange={(e) => updateSelectedShapeRange('visibleFrom', Number(e.target.value))}
+                      disabled={duration <= 0}
+                    />
+                  </label>
+
+                  <label>
+                    Slut: {formatTime(selectedShape.visibleTo ?? duration)}
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration || 0}
+                      step={0.1}
+                      value={selectedShape.visibleTo ?? duration}
+                      onChange={(e) => updateSelectedShapeRange('visibleTo', Number(e.target.value))}
+                      disabled={duration <= 0}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+          </div>
+        )}
+
+        {/* Focused Step Section */}
+        <div style={{ width: showVideoWorkspace ? '320px' : '100%' }}>
+          <div className="analyze-step-panel">
+            <h3>{getStepTitle()}</h3>
+
+            {currentStep === 'draw' && (
+              <div>
+                <p>
+                  Spela upp videon, rita linjer/cirklar och justera när ritningarna ska synas.
+                </p>
+                <p style={{ color: '#555', fontSize: '0.9rem' }}>
+                  Tips: Välj en form i tidslinjen och finjustera Start/Slut under videon.
+                </p>
+              </div>
+            )}
+
+            {currentStep === 'feedback' && (
+              <FeedbackPanel
+                skill={skill}
+                mode="feedback"
+                initialFeedback={existingAnalysis?.feedback}
+                initialNextSteps={existingAnalysis?.nextSteps}
+                onFeedbackChange={setCustomFeedback}
+                onNextStepsChange={setCustomNextSteps}
+              />
+            )}
+
+            {currentStep === 'nextSteps' && (
+              <FeedbackPanel
+                skill={skill}
+                mode="nextSteps"
+                initialFeedback={existingAnalysis?.feedback}
+                initialNextSteps={existingAnalysis?.nextSteps}
+                onFeedbackChange={setCustomFeedback}
+                onNextStepsChange={setCustomNextSteps}
+              />
+            )}
+
+            {currentStep === 'save' && (
+              <div>
+                {!isSaved ? (
+                  <>
+                    <p>Redo att spara analysen.</p>
+                    <ul style={{ margin: '10px 0 0 18px' }}>
+                      <li>Feedbackpunkter: {customFeedback.length}</li>
+                      <li>Nästa steg: {customNextSteps.length}</li>
+                    </ul>
+                  </>
+                ) : (
+                  <div className="analysis-saved-panel">
+                    <h4>Analysen är sparad</h4>
+                    <p>Vad vill du göra nu?</p>
+                    <div className="analysis-saved-actions">
+                      <button type="button" onClick={() => navigate('/history')}>
+                        Se i historik
+                      </button>
+                      <button type="button" onClick={() => navigate(`/${getHomeSelectionSearch() ? `?${getHomeSelectionSearch()}` : ''}`)}>
+                        Öva och spela in igen
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="analyze-step-actions">
+              <button type="button" onClick={goToPreviousStep} disabled={stepIndex === 0}>
+                ← Föregående
+              </button>
+              {currentStep === 'save' ? (
+                <button type="button" onClick={saveAnalysis} className="analyze-save-cta" disabled={isSaved}>
+                  {isSaved ? 'Sparad' : '💾 Spara analys'}
+                </button>
+              ) : (
+                <button type="button" onClick={goToNextStep} disabled={stepIndex === stepOrder.length - 1}>
+                  Nästa →
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

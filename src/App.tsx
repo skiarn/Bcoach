@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home.tsx'
 import Analyze from './pages/Analyze.tsx'
@@ -9,6 +9,13 @@ import SkillPractice from './pages/SkillPractice.tsx'
 function App(): JSX.Element {
   const [selectedVideo, setSelectedVideo] = useState<{ file: File | Blob; url: string } | null>(null)
 
+  useEffect(() => {
+    const { pathname, search, hash } = window.location
+    if (pathname === '/Bcoach') {
+      window.history.replaceState(window.history.state, '', `/Bcoach/${search}${hash}`)
+    }
+  }, [])
+
   const handleVideoSelect = (file: File | Blob, url: string) => {
     setSelectedVideo({ file, url })
   }
@@ -18,7 +25,7 @@ function App(): JSX.Element {
   }
 
   return (
-    <Router>
+    <Router basename="/Bcoach">
       <div className="App">
         <Routes>
           <Route

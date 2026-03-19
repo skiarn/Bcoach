@@ -3,6 +3,7 @@ export interface Skill {
   type: 'volleyboll' | 'beachvolley';
   videoUrls: string[];
   advice: string[];
+  nextSteps: string[];
 }
 
 export const skills: Skill[] = [
@@ -15,6 +16,12 @@ export const skills: Skill[] = [
       'Slå bollen med fingertopparna för bättre kontroll.',
       'Följ igenom slaget för att ge bollen rätt riktning.',
       'Öva på att placera bollen exakt där du vill.'
+    ],
+    nextSteps: [
+      'Öva fingerslag mot vägg 50 ggr per dag.',
+      'Filma dig själv framifrån och bakifrån och jämför.',
+      'Öva med partner: växla fingerslag 10 i rad utan tapp.',
+      'Fokusera enbart på handledsrörelsen nästa session.'
     ]
   },
   {
@@ -26,6 +33,12 @@ export const skills: Skill[] = [
       'Håll handleden avslappnad för bättre känsla.',
       'Slå bollen framför kroppen.',
       'Fokusera på att få bollen över nätet med precision.'
+    ],
+    nextSteps: [
+      'Öva bagger mot vägg med jämnt tempo.',
+      'Träna fotarbete – positionera dig rätt före slag.',
+      'Öva med partner: serve–bagger 20 i rad.',
+      'Jobba på armvinkeln vid kontakt.'
     ]
   },
   {
@@ -37,6 +50,12 @@ export const skills: Skill[] = [
       'Slå bollen med underarmen, inte handen.',
       'Håll bollen stilla innan serve.',
       'Öva på att variera servens riktning och hastighet.'
+    ],
+    nextSteps: [
+      'Öva servens precision: sikta på specifika zoner.',
+      'Variera kraft – träna både låg och hög hastighet.',
+      'Filma servens från sidan för att kontrollera kroppspositionen.',
+      'Öva 20 serves i rad med konsekvent teknik.'
     ]
   },
   {
@@ -48,6 +67,12 @@ export const skills: Skill[] = [
       'Använd hela kroppen för att generera kraft.',
       'Håll blicken på bollen hela tiden.',
       'Öva på att träffa bollen i mitten för bättre kontroll.'
+    ],
+    nextSteps: [
+      'Öva kastet separat – konsekvent höjd och position.',
+      'Fokusera på höftrotation för mer kraft.',
+      'Träna på att variera riktning (kors/linje).',
+      'Filma utifrån sidan – kontrollera armbågens höjd.'
     ]
   },
   {
@@ -59,6 +84,12 @@ export const skills: Skill[] = [
       'Kontakta bollen framför pannan.',
       'Använd handleden för att styra riktningen.',
       'Följ igenom slaget för maximal kraft.'
+    ],
+    nextSteps: [
+      'Öva ansatsen – 3-stegsansats tills den sitter.',
+      'Träna hoppet separat för att bygga explosivitet.',
+      'Öva spiken mot med nät utan motståndare.',
+      'Filma framifrån – kontrollera höjden på bollkontakten.'
     ]
   },
   {
@@ -70,6 +101,12 @@ export const skills: Skill[] = [
       'Öva på olika typer av slag som tipp och roll.',
       'Använd kroppen för att skapa vinklar.',
       'Kommunicera med din partner om vilket anfall du ska göra.'
+    ],
+    nextSteps: [
+      'Öva tipp och roll 10 ggr vardera per träning.',
+      'Träna att bestämma anfallstyp SENT i hoppet.',
+      'Öva med partner: blockeraren väljer sida, anfallaren anpassar.',
+      'Filma sidoprofil – kontrollera hur väl du döljer anfallsintentionen.'
     ]
   },
   {
@@ -81,6 +118,12 @@ export const skills: Skill[] = [
       'Håll armarna raka och händerna ihop.',
       'Läs motståndarens intention.',
       'Blocka bollen rakt upp för att hjälpa din partner.'
+    ],
+    nextSteps: [
+      'Öva blocktiming med en partner som spikar.',
+      'Träna att läsa motståndarens axelriktning.',
+      'Öva på att landa stabilt och direkt ta nästa position.',
+      'Filma framifrån – kontrollera handens läge vid kontakt.'
     ]
   },
   {
@@ -92,6 +135,12 @@ export const skills: Skill[] = [
       'Använd båda händerna för bättre kontroll.',
       'Hopp högt och sträck ut.',
       'Öva på timing för att hinna fram i tid.'
+    ],
+    nextSteps: [
+      'Öva rotering och sträckning utan boll.',
+      'Träna blockback med sakta-serve från partner.',
+      'Jobba på landningen – direkt balans efter hopp.',
+      'Filma bakifrån – kontrollera vridningens full räckvidd.'
     ]
   },
   {
@@ -103,6 +152,12 @@ export const skills: Skill[] = [
       'Flytta fötterna snabbt för att nå bollen.',
       'Använd platt hand för bättre kontroll.',
       'Passa bollen högt och precist till din partner.'
+    ],
+    nextSteps: [
+      'Öva mottagets precision – sikta på en specifik zon.',
+      'Träna reaktionssnabbhet med varierande serveriktningar.',
+      'Öva "bagger-position" som grundposition.',
+      'Filma framifrån under match för att analysera beslut.'
     ]
   },
   {
@@ -114,6 +169,12 @@ export const skills: Skill[] = [
       'Håll handleden rak.',
       'Skapa en flytande rörelse.',
       'Öva på att placera bollen exakt.'
+    ],
+    nextSteps: [
+      'Öva floatrörelsen stående på marken först.',
+      'Träna ansats + hopp utan boll.',
+      'Öva precision: sikta på specifika fält.',
+      'Filma serven från sidan för att kontrollera hoppets höjd.'
     ]
   },
   {
@@ -125,6 +186,12 @@ export const skills: Skill[] = [
       'Slå bollen med kraft för att skapa rotation.',
       'Variera spinnet för att göra det svårare för motståndaren.',
       'Öva på att träffa bollen rätt för önskad effekt.'
+    ],
+    nextSteps: [
+      'Öva greppet – håll och snurra bollen utan att serva.',
+      'Träna spinnets riktning: topspin vs. sidospin.',
+      'Öva 10 spinner i rad mot ett fält.',
+      'Filma handen vid kontakt – kontrollera fingerarbetet.'
     ]
   },
   // Volleyboll
@@ -137,6 +204,12 @@ export const skills: Skill[] = [
       'Slå bollen med fingertopparna för bättre kontroll.',
       'Följ igenom slaget för att ge bollen rätt riktning.',
       'Öva på att placera bollen exakt där du vill.'
+    ],
+    nextSteps: [
+      'Öva fingerslag mot vägg 50 ggr per dag.',
+      'Filma dig framifrån – kontrollera handpositionen.',
+      'Öva med partner i par-fingerslag 10 i rad.',
+      'Fokusera på sättningens höjd och precision.'
     ]
   },
   {
@@ -148,6 +221,12 @@ export const skills: Skill[] = [
       'Håll handleden avslappnad för bättre känsla.',
       'Slå bollen framför kroppen.',
       'Fokusera på att få bollen över nätet med precision.'
+    ],
+    nextSteps: [
+      'Öva bagger mot vägg med jämnt tempo.',
+      'Träna fotarbete – positionera dig rätt.',
+      'Öva serve–mottag med partner 20 i rad.',
+      'Jobba på armvinkeln vid kontakt.'
     ]
   },
   {
@@ -159,6 +238,12 @@ export const skills: Skill[] = [
       'Slå bollen med underarmen, inte handen.',
       'Håll bollen stilla innan serve.',
       'Öva på att variera servens riktning och hastighet.'
+    ],
+    nextSteps: [
+      'Öva precision: sikta på specifika zoner.',
+      'Variera kraft från session till session.',
+      'Filma servens från sidan – kontrollera positionen.',
+      'Öva 20 serves i rad med konsekvent teknik.'
     ]
   },
   {
@@ -170,6 +255,12 @@ export const skills: Skill[] = [
       'Använd hela kroppen för att generera kraft.',
       'Håll blicken på bollen hela tiden.',
       'Öva på att träffa bollen i mitten för bättre kontroll.'
+    ],
+    nextSteps: [
+      'Öva kastet separat – konsekvent höjd.',
+      'Fokusera på höftrotation.',
+      'Träna riktningsvariation (kors/linje).',
+      'Filma utifrån sidan – kontrollera armbågens höjd.'
     ]
   },
   {
@@ -181,6 +272,12 @@ export const skills: Skill[] = [
       'Kontakta bollen framför pannan.',
       'Använd handleden för att styra riktningen.',
       'Följ igenom slaget för maximal kraft.'
+    ],
+    nextSteps: [
+      'Öva 3-stegsansatsen tills den sitter.',
+      'Träna hoppet för explosivitet.',
+      'Öva spiken med nät utan motståndare.',
+      'Filma framifrån – kontrollera bollkontaktens höjd.'
     ]
   },
   {
@@ -192,6 +289,12 @@ export const skills: Skill[] = [
       'Öva på olika typer av slag som tipp och roll.',
       'Använd kroppen för att skapa vinklar.',
       'Kommunicera med din partner om vilket anfall du ska göra.'
+    ],
+    nextSteps: [
+      'Öva tipp och roll 10 ggr vardera.',
+      'Träna sen beslutfattning i hoppet.',
+      'Öva med partner: blockeraren väljer, anfallaren anpassar.',
+      'Filma sidoprofil för att analysera intentions-döljan.'
     ]
   },
   {
@@ -203,6 +306,12 @@ export const skills: Skill[] = [
       'Håll armarna raka och händerna ihop.',
       'Läs motståndarens intention.',
       'Blocka bollen rakt upp för att hjälpa din partner.'
+    ],
+    nextSteps: [
+      'Öva blocktiming med anfallande partner.',
+      'Träna att läsa axelriktning.',
+      'Öva stabil landning och direktrörelse.',
+      'Filma framifrån – handposition vid kontakt.'
     ]
   },
   {
@@ -214,6 +323,12 @@ export const skills: Skill[] = [
       'Flytta fötterna snabbt för att nå bollen.',
       'Använd platt hand för bättre kontroll.',
       'Passa bollen högt och precist till din partner.'
+    ],
+    nextSteps: [
+      'Öva mottag–pass–sättning i grupp om 3.',
+      'Träna reaktionssnabbet med varierande server.',
+      'Öva precision: sikt på sättar-positionen.',
+      'Filma match för att analysera positionsbeslut.'
     ]
   },
   {
@@ -225,6 +340,12 @@ export const skills: Skill[] = [
       'Håll handleden rak.',
       'Skapa en flytande rörelse.',
       'Öva på att placera bollen exakt.'
+    ],
+    nextSteps: [
+      'Öva floatrörelsen stående på marken.',
+      'Träna ansats + hopp utan boll.',
+      'Öva precision mot specifika fält.',
+      'Filma från sidan – kontrollera hoppets höjd.'
     ]
   },
   {
@@ -236,6 +357,12 @@ export const skills: Skill[] = [
       'Slå bollen med kraft för att skapa rotation.',
       'Variera spinnet för att göra det svårare för motståndaren.',
       'Öva på att träffa bollen rätt för önskad effekt.'
+    ],
+    nextSteps: [
+      'Öva greppet och bollrotationen separat.',
+      'Träna topspin vs. sidospin.',
+      'Öva 10 spinner i rad mot ett fält.',
+      'Filma handen vid kontakt – kontrollera fingerarbete.'
     ]
   },
 ];

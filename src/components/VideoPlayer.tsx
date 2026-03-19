@@ -4,6 +4,7 @@ interface VideoPlayerProps {
   src: string
   onTimeUpdate?: () => void
   onLoadedMetadata?: () => void
+  isFullscreen?: boolean
 }
 
 const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
@@ -12,15 +13,12 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       <div className="video-player">
         <video
           ref={ref}
+          src={src}
           controls={false}
           onTimeUpdate={onTimeUpdate}
           onLoadedMetadata={onLoadedMetadata}
-          style={{ width: '100%', maxWidth: '640px' }}
-        >
-          <source src={src} type="video/mp4" />
-          <source src={src} type="video/webm" />
-          Your browser does not support the video tag.
-        </video>
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
       </div>
     )
   }

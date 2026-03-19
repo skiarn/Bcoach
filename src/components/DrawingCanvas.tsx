@@ -8,27 +8,59 @@ interface DrawingCanvasProps {
   tool: Tool;
   shapes: Shape[];
   onShapesChange: (shapes: Shape[]) => void;
+  currentTime: number;
+  duration: number;
 }
 
 interface Shape {
+  id: string;
   type: "line" | "circle";
   startX: number;
   startY: number;
   endX: number;
   endY: number;
+  sourceWidth?: number;
+  sourceHeight?: number;
+  visibleFrom?: number;
+  visibleTo?: number;
 }
 
-const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shapes, onShapesChange }) => {
+const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shapes, onShapesChange, currentTime, duration }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentShape, setCurrentShape] = useState<Shape | null>(null);
 
+  const isShapeVisibleAtTime = (shape: Shape, time: number) => {
+    if (shape.visibleFrom === undefined || shape.visibleTo === undefined) {
+      return true;
+    }
+
+    return time >= shape.visibleFrom && time <= shape.visibleTo;
+  };
+
+  const getScaledShape = (shape: Shape): Shape => {
+    if (!shape.sourceWidth || !shape.sourceHeight) {
+      return shape;
+    }
+
+    const scaleX = width / shape.sourceWidth;
+    const scaleY = height / shape.sourceHeight;
+
+    return {
+      ...shape,
+      startX: shape.startX * scaleX,
+      startY: shape.startY * scaleY,
+      endX: shape.endX * scaleX,
+      endY: shape.endY * scaleY,
+    };
+  };
+
   // Rita allt
   const draw = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, width, height);
 
-    [...shapes, currentShape]
+    [...shapes.filter((shape) => isShapeVisibleAtTime(shape, currentTime)).map(getScaledShape), currentShape]
       .filter(Boolean)
       .forEach((shape) => {
         if (!shape) return;
@@ -62,7 +94,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shap
     if (!ctx) return;
 
     draw(ctx);
-  }, [shapes, currentShape]);
+  }, [shapes, currentShape, currentTime]);
 
   // Mouse events
   const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -90,6 +122,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shap
 
     setIsDrawing(true);
     setCurrentShape({
+      id: `shape-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: tool,
       startX: x,
       startY: y,
@@ -106,6 +139,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shap
 
     setIsDrawing(true);
     setCurrentShape({
+      id: `shape-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: tool,
       startX: x,
       startY: y,
@@ -142,7 +176,21 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shap
   const handleMouseUp = () => {
     if (!currentShape) return;
 
-    onShapesChange([...shapes, currentShape]);
+    const visibleFrom = Math.max(0, currentTime - 0.75);
+    const visibleTo = duration > 0
+      ? Math.min(duration, currentTime + 1.25)
+      : currentTime + 1.25;
+
+    onShapesChange([
+      ...shapes,
+      {
+        ...currentShape,
+        sourceWidth: width,
+        sourceHeight: height,
+        visibleFrom,
+        visibleTo,
+      },
+    ]);
     setCurrentShape(null);
     setIsDrawing(false);
   };
@@ -150,7 +198,21 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ width, height, tool, shap
   const handleTouchEnd = () => {
     if (!currentShape) return;
 
-    onShapesChange([...shapes, currentShape]);
+    const visibleFrom = Math.max(0, currentTime - 0.75);
+    const visibleTo = duration > 0
+      ? Math.min(duration, currentTime + 1.25)
+      : currentTime + 1.25;
+
+    onShapesChange([
+      ...shapes,
+      {
+        ...currentShape,
+        sourceWidth: width,
+        sourceHeight: height,
+        visibleFrom,
+        visibleTo,
+      },
+    ]);
     setCurrentShape(null);
     setIsDrawing(false);
   };
