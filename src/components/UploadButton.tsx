@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
+import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
+import { addImportedVideoFile } from '../services/videoLibrary.ts'
 
 interface UploadButtonProps {
-  onVideoSelect: (video: File | Blob, url: string) => void
+  onVideoSelect: (video: File | Blob, url: string, metadata?: EmbeddedAnalysisMetadata, libraryId?: string) => void
 }
 
 function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
@@ -30,11 +33,59 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file && file.type.startsWith('video/')) {
-      const url = URL.createObjectURL(file)
-      onVideoSelect(file, url)
+    const files = Array.from(e.target.files ?? [])
+    if (files.length === 0) {
+      return
     }
+
+    // If multiple files selected, import all to library
+    if (files.length > 1) {
+      void (async () => {
+        for (const file of files) {
+          if (!file.type.startsWith('video/')) continue
+
+          try {
+            let extractedMetadata: EmbeddedAnalysisMetadata | undefined
+
+            try {
+              const extracted = await extractMetadataFromVideo(file, file.name)
+              extractedMetadata = extracted?.metadata
+            } catch {
+              extractedMetadata = undefined
+            }
+
+            await addImportedVideoFile(file, extractedMetadata)
+          } catch (error) {
+            console.error('Error importing file:', file.name, error)
+          }
+        }
+
+        alert(`Importerade ${files.filter((f) => f.type.startsWith('video/')).length} video(s).`)
+      })()
+      e.target.value = ''
+      return
+    }
+
+    // Single file: import and open for analysis
+    const file = files[0]
+    if (!file.type.startsWith('video/')) {
+      return
+    }
+
+    void (async () => {
+      let extractedMetadata: EmbeddedAnalysisMetadata | undefined
+
+      try {
+        const extracted = await extractMetadataFromVideo(file, file.name)
+        extractedMetadata = extracted?.metadata
+      } catch {
+        extractedMetadata = undefined
+      }
+
+      const libraryId = await addImportedVideoFile(file, extractedMetadata)
+      const url = URL.createObjectURL(file)
+      onVideoSelect(file, url, extractedMetadata, libraryId)
+    })()
   }
 
   const startRecording = async () => {
@@ -61,15 +112,20 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
       }
 
       mediaRecorder.onstop = () => {
-        const blobType = mediaRecorder.mimeType || 'video/webm'
-        const blob = new Blob(chunksRef.current, { type: blobType })
-        const url = URL.createObjectURL(blob)
-        onVideoSelect(blob, url)
+        void (async () => {
+          const blobType = mediaRecorder.mimeType || 'video/webm'
+          const blob = new Blob(chunksRef.current, { type: blobType })
+          const fileName = `recording-${Date.now()}.webm`
+          const file = new File([blob], fileName, { type: blobType })
+          const libraryId = await addImportedVideoFile(file)
+          const url = URL.createObjectURL(file)
+          onVideoSelect(file, url, undefined, libraryId)
 
-        // Stop camera stream
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop())
-        }
+          // Stop camera stream
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop())
+          }
+        })()
       }
 
       mediaRecorder.start()
@@ -115,13 +171,11 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
         <input
           type="file"
           accept="video/*"
+          multiple
           onChange={handleFileSelect}
           style={{ display: 'none' }}
           id="video-upload"
         />
-        <label htmlFor="video-upload" className="upload-button-label">
-          Ladda upp video
-        </label>
 
         <button
           type="button"

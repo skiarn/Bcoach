@@ -5,9 +5,15 @@ import Analyze from './pages/Analyze.tsx'
 import History from './pages/History.tsx'
 import Training from './pages/Training.tsx'
 import SkillPractice from './pages/SkillPractice.tsx'
+import { EmbeddedAnalysisMetadata } from './types/analysis.ts'
 
 function App(): JSX.Element {
-  const [selectedVideo, setSelectedVideo] = useState<{ file: File | Blob; url: string } | null>(null)
+  const [selectedVideo, setSelectedVideo] = useState<{
+    file: File | Blob
+    url: string
+    metadata?: EmbeddedAnalysisMetadata
+    libraryId?: string
+  } | null>(null)
 
   useEffect(() => {
     const { pathname, search, hash } = window.location
@@ -16,8 +22,13 @@ function App(): JSX.Element {
     }
   }, [])
 
-  const handleVideoSelect = (file: File | Blob, url: string) => {
-    setSelectedVideo({ file, url })
+  const handleVideoSelect = (
+    file: File | Blob,
+    url: string,
+    metadata?: EmbeddedAnalysisMetadata,
+    libraryId?: string
+  ) => {
+    setSelectedVideo({ file, url, metadata, libraryId })
   }
 
   const handleBackToHome = () => {
@@ -35,6 +46,7 @@ function App(): JSX.Element {
                 <Analyze
                   videoUrl={selectedVideo.url}
                   videoFile={selectedVideo.file}
+                  embeddedMetadata={selectedVideo.metadata}
                   onBack={handleBackToHome}
                 />
               ) : (
