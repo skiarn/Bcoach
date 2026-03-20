@@ -19,4 +19,7 @@ export default defineConfig({
     },
   ],
   base: '/Bcoach/',
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util', '@ffmpeg/core'],
+  },
 })

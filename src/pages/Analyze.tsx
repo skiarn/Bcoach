@@ -5,9 +5,12 @@ import DrawingCanvas from '../components/DrawingCanvas.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
 import Controls from '../components/Controls.tsx'
 import FeedbackPanel from '../components/FeedbackPanel.tsx'
-import useLocalStorage from '../hooks/useLocalStorage.ts'
+import SkillPicker from '../components/SkillPicker.tsx'
 import { Skill, skills } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
+import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
+import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
+import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
 
 interface VideoAnalysis {
   id: string
@@ -24,38 +27,57 @@ interface VideoAnalysis {
 interface AnalyzeProps {
   videoUrl?: string
   videoFile?: File | Blob
+  embeddedMetadata?: EmbeddedAnalysisMetadata
   onBack: () => void
 }
 
 type Tool = "line" | "circle" | "none";
 type AnalyzeStep = 'draw' | 'feedback' | 'nextSteps' | 'save'
 
-interface Shape {
-  id: string
-  type: "line" | "circle";
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-  sourceWidth?: number;
-  sourceHeight?: number;
-  visibleFrom?: number;
-  visibleTo?: number;
-}
-
-function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: AnalyzeProps): JSX.Element {
+function Analyze({
+  videoUrl: propVideoUrl,
+  videoFile: propVideoFile,
+  embeddedMetadata: propEmbeddedMetadata,
+  onBack,
+}: AnalyzeProps): JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
   const stateSkill: Skill | undefined = location.state?.skill
   const existingAnalysis = location.state?.analysis as VideoAnalysis | undefined
-  const existingAnalysisId = location.state?.analysisId as string | undefined
-  const skill = stateSkill ?? skills.find(
+  const routeEmbeddedMetadata = location.state?.embeddedMetadata as EmbeddedAnalysisMetadata | undefined
+  const embeddedMetadata = propEmbeddedMetadata ?? routeEmbeddedMetadata
+  const metadataSkill = useMemo(
+    () => skills.find(
+      (entry) => entry.name === embeddedMetadata?.skillName && entry.type === embeddedMetadata?.skillType
+    ),
+    [embeddedMetadata?.skillName, embeddedMetadata?.skillType]
+  )
+  const derivedSkill = stateSkill ?? metadataSkill ?? skills.find(
     (entry) => entry.name === existingAnalysis?.skillName && entry.type === existingAnalysis?.skillType
   )
   const videoUrl = propVideoUrl || location.state?.videoUrl
   const videoFile = propVideoFile || location.state?.videoFile
 
-  if (!videoUrl) {
+  // Create a stable blob URL from videoFile if videoUrl is not reliable
+  const [stableVideoUrl, setStableVideoUrl] = useState<string>('')
+
+  useEffect(() => {
+    if (videoFile && videoFile instanceof Blob) {
+      const blobUrl = URL.createObjectURL(videoFile)
+      setStableVideoUrl(blobUrl)
+      return () => {
+        URL.revokeObjectURL(blobUrl)
+      }
+    }
+
+    if (videoUrl) {
+      setStableVideoUrl(videoUrl)
+    }
+  }, [videoFile, videoUrl])
+
+  const effectiveVideoUrl = stableVideoUrl || videoUrl
+
+  if (!effectiveVideoUrl) {
     return (
       <div className="analyze">
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -85,7 +107,10 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
   const [customNextSteps, setCustomNextSteps] = useState<string[]>([])
   const [currentStep, setCurrentStep] = useState<AnalyzeStep>('draw')
   const [isSaved, setIsSaved] = useState(false)
-  const [analyses, setAnalyses] = useLocalStorage<VideoAnalysis[]>('beach-volley-analyses', [])
+  const [isExporting, setIsExporting] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [selectedSkillType, setSelectedSkillType] = useState<Skill['type']>(derivedSkill?.type ?? 'beachvolley')
+  const [selectedSkillName, setSelectedSkillName] = useState<string>(derivedSkill?.name ?? '')
 
   const rawVideoName = videoFile instanceof File
     ? videoFile.name
@@ -97,12 +122,52 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
   )
 
   useEffect(() => {
+    if (!derivedSkill) {
+      return
+    }
+
+    setSelectedSkillType(derivedSkill.type)
+    setSelectedSkillName(derivedSkill.name)
+  }, [derivedSkill?.name, derivedSkill?.type])
+
+  const availableSkills = useMemo(
+    () => skills.filter((entry) => entry.type === selectedSkillType),
+    [selectedSkillType]
+  )
+
+  const skill = useMemo(
+    () => availableSkills.find((entry) => entry.name === selectedSkillName),
+    [availableSkills, selectedSkillName]
+  )
+
+  useEffect(() => {
     if (!existingAnalysis) return
 
+    console.log('[Analyze] Loading from existingAnalysis:', existingAnalysis)
     setShapes(existingAnalysis.shapes ?? [])
     setCustomFeedback(existingAnalysis.feedback ?? [])
     setCustomNextSteps(existingAnalysis.nextSteps ?? [])
   }, [existingAnalysis])
+
+  useEffect(() => {
+    if (existingAnalysis || !embeddedMetadata) return
+
+    console.log('[Analyze] Loading from embeddedMetadata:', embeddedMetadata)
+    setShapes(embeddedMetadata.shapes ?? [])
+    setCustomFeedback(embeddedMetadata.feedback ?? [])
+    setCustomNextSteps(embeddedMetadata.nextSteps ?? [])
+  }, [embeddedMetadata, existingAnalysis])
+
+  // Debug: Log when embeddedMetadata changes
+  useEffect(() => {
+    if (embeddedMetadata) {
+      console.log('[Analyze] embeddedMetadata available:', {
+        shapes: embeddedMetadata.shapes?.length ?? 0,
+        feedback: embeddedMetadata.feedback?.length ?? 0,
+        nextSteps: embeddedMetadata.nextSteps?.length ?? 0,
+      })
+    }
+  }, [embeddedMetadata])
 
   const getSafeDuration = (): number => {
     if (!videoRef.current) return 0
@@ -328,37 +393,78 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
     )
   }
 
-  // Save analysis
-  const handleSaveAnalysis = (shapes: any[]) => {
-    const feedback = customFeedback.length > 0 ? customFeedback : (skill ? skill.advice : [
-      "Du hoppar lite sent",
-      "Armen är inte helt rak",
-      "Försök att följa igenom slaget mer"
-    ])
+  const getSourceVideoBlob = async (): Promise<Blob> => {
+    if (videoFile instanceof Blob) {
+      return videoFile
+    }
 
-    const targetId = existingAnalysisId ?? existingAnalysis?.id
-    const analysisId = targetId ?? Date.now().toString()
+    const response = await fetch(effectiveVideoUrl)
+    if (!response.ok) {
+      throw new Error('Kunde inte läsa videofilen för export.')
+    }
 
-    const newAnalysis: VideoAnalysis = {
-      id: analysisId,
-      videoUrl,
-      videoName,
-      shapes,
-      feedback,
-      nextSteps: customNextSteps,
-      timestamp: Date.now(),
+    return response.blob()
+  }
+
+  const triggerDownload = (blob: Blob, fileName: string) => {
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = fileName
+    link.click()
+    URL.revokeObjectURL(downloadUrl)
+  }
+
+  const handleSaveAnalysis = async (nextShapes: Shape[]) => {
+    setSaveError(null)
+
+    const feedback = customFeedback.length > 0
+      ? customFeedback
+      : (embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? [])
+
+    const nextSteps = customNextSteps.length > 0
+      ? customNextSteps
+      : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
+
+    const metadata: EmbeddedAnalysisMetadata = {
+      schemaVersion: 1,
+      savedAt: Date.now(),
+      sourceVideoName: videoName,
       skillName: skill?.name,
       skillType: skill?.type,
+      shapes: nextShapes,
+      feedback,
+      nextSteps,
     }
 
-    if (targetId) {
-      setAnalyses(analyses.map((analysis) => (analysis.id === targetId ? newAnalysis : analysis)))
+    setIsExporting(true)
+
+    try {
+      console.log('[Export] Starting export process...')
+      const sourceBlob = await getSourceVideoBlob()
+      console.log('[Export] Source blob loaded:', sourceBlob.size, 'bytes')
+
+      const fileName = buildAnalyzedVideoFileName(videoName)
+      console.log('[Export] Attaching metadata with ffmpeg...')
+
+      const packagedBlob = await appendMetadataToVideo(sourceBlob, metadata, fileName)
+      console.log('[Export] Metadata attached:', packagedBlob.size, 'bytes')
+
+      console.log('[Export] Saving to IndexedDB...')
+      await addExportedVideoBlob(packagedBlob, fileName, metadata)
+      console.log('[Export] Saved to IndexedDB')
+
+      console.log('[Export] Triggering download...')
+      triggerDownload(packagedBlob, fileName)
+      console.log('[Export] Download triggered, export complete!')
       setIsSaved(true)
-      return
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Kunde inte spara videon just nu.'
+      console.error('[Export] Error:', message, error)
+      setSaveError(message)
+    } finally {
+      setIsExporting(false)
     }
-
-    setAnalyses([newAnalysis, ...analyses])
-    setIsSaved(true)
   }
 
   const clearCanvas = () => {
@@ -370,8 +476,60 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
     setShapes((prev) => prev.slice(0, -1));
   };
 
+  const saveAnalysisToLibrary = async (nextShapes: Shape[]) => {
+    if (!location.state?.libraryId) {
+      setSaveError('Kunde inte spara: Video-ID saknas')
+      return
+    }
+
+    setSaveError(null)
+
+    try {
+      const libraryId = location.state.libraryId as string
+      const record = await getVideoLibraryRecord(libraryId)
+      if (!record) {
+        setSaveError('Kunde inte hitta videon i biblioteket')
+        return
+      }
+
+      const feedback = customFeedback.length > 0
+        ? customFeedback
+        : (embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? [])
+
+      const nextSteps = customNextSteps.length > 0
+        ? customNextSteps
+        : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
+
+      const metadata: EmbeddedAnalysisMetadata = {
+        schemaVersion: 1,
+        savedAt: Date.now(),
+        sourceVideoName: videoName,
+        skillName: skill?.name,
+        skillType: skill?.type,
+        shapes: nextShapes,
+        feedback,
+        nextSteps,
+      }
+
+      console.log('[LibrarySave] Updating library record with metadata...')
+      const updatedRecord = {...record, metadata}
+      await upsertVideoRecord(updatedRecord)
+      console.log('[LibrarySave] Library record updated successfully')
+
+      setIsSaved(true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Kunde inte spara analysen.'
+      console.error('[LibrarySave] Error:', message, error)
+      setSaveError(message)
+    }
+  }
+
   const saveAnalysis = () => {
-    handleSaveAnalysis(shapes);
+    void handleSaveAnalysis(shapes)
+  };
+
+  const quickSaveAnalysis = () => {
+    void saveAnalysisToLibrary(shapes)
   };
 
   const stepOrder: AnalyzeStep[] = ['draw', 'feedback', 'nextSteps', 'save']
@@ -420,7 +578,7 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
         <div className={`analyze-step ${currentStep === 'save' ? 'active' : ''}`}>4. Spara</div>
       </div>
 
-      <div style={{ position: 'relative', display: showVideoWorkspace ? 'flex' : 'block', gap: '20px' }}>
+      <div style={{ position: 'relative', display: 'block' }}>
         {/* Video Section */}
         {showVideoWorkspace && (
           <div style={{ flex: 1 }}>
@@ -430,7 +588,7 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
           >
             <VideoPlayer
               ref={videoRef}
-              src={videoUrl}
+              src={effectiveVideoUrl}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}
               isFullscreen={isFullscreen}
@@ -556,9 +714,9 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
         )}
 
         {/* Focused Step Section */}
-        <div style={{ width: showVideoWorkspace ? '320px' : '100%' }}>
+        <div style={{ width: '100%', marginTop: showVideoWorkspace ? '16px' : '0' }}>
           <div className="analyze-step-panel">
-            <h3>{getStepTitle()}</h3>
+            {currentStep !== 'draw' && <h3>{getStepTitle()}</h3>}
 
             {currentStep === 'draw' && (
               <div>
@@ -568,6 +726,7 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
                 <p style={{ color: '#555', fontSize: '0.9rem' }}>
                   Tips: Välj en form i tidslinjen och finjustera Start/Slut under videon.
                 </p>
+                <h3 style={{ marginTop: '14px' }}>{getStepTitle()}</h3>
               </div>
             )}
 
@@ -575,42 +734,61 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
               <FeedbackPanel
                 skill={skill}
                 mode="feedback"
-                initialFeedback={existingAnalysis?.feedback}
-                initialNextSteps={existingAnalysis?.nextSteps}
+                initialFeedback={existingAnalysis?.feedback || customFeedback}
+                initialNextSteps={existingAnalysis?.nextSteps || customNextSteps}
                 onFeedbackChange={setCustomFeedback}
                 onNextStepsChange={setCustomNextSteps}
               />
             )}
 
             {currentStep === 'nextSteps' && (
-              <FeedbackPanel
-                skill={skill}
-                mode="nextSteps"
-                initialFeedback={existingAnalysis?.feedback}
-                initialNextSteps={existingAnalysis?.nextSteps}
-                onFeedbackChange={setCustomFeedback}
-                onNextStepsChange={setCustomNextSteps}
-              />
+              <div>
+                {!skill && (
+                  <SkillPicker
+                    label="Välj sport och teknik för att få relevanta nästa steg"
+                    selectedSkillType={selectedSkillType}
+                    selectedSkillName={selectedSkillName}
+                    onSkillTypeChange={setSelectedSkillType}
+                    onSkillNameChange={setSelectedSkillName}
+                    allowDeselect={true}
+                    className="home-skill-picker"
+                  />
+                )}
+
+                <FeedbackPanel
+                  skill={skill}
+                  mode="nextSteps"
+                  initialFeedback={existingAnalysis?.feedback || customFeedback}
+                  initialNextSteps={existingAnalysis?.nextSteps || customNextSteps}
+                  onFeedbackChange={setCustomFeedback}
+                  onNextStepsChange={setCustomNextSteps}
+                />
+              </div>
             )}
 
             {currentStep === 'save' && (
               <div>
                 {!isSaved ? (
                   <>
-                    <p>Redo att spara analysen.</p>
+                    <p>Redo att spara videon - välj antingen lokalt spara (i biblioteket) eller exportera (ladda ner med metadata).</p>
                     <ul style={{ margin: '10px 0 0 18px' }}>
                       <li>Feedbackpunkter: {customFeedback.length}</li>
                       <li>Nästa steg: {customNextSteps.length}</li>
                     </ul>
+                    <p style={{ marginTop: '10px', color: '#555' }}>
+                      Lokalt spara sparar analysen i biblioteket. Exportera skapar en ny fil med all data inbrändad i videons metadata.
+                    </p>
+                    {saveError && (
+                      <p style={{ marginTop: '8px', color: '#c62828' }}>
+                        {saveError}
+                      </p>
+                    )}
                   </>
                 ) : (
                   <div className="analysis-saved-panel">
                     <h4>Analysen är sparad</h4>
-                    <p>Vad vill du göra nu?</p>
+                    <p>Du kan nu öppna videon igen och samma analys kommer att visas.</p>
                     <div className="analysis-saved-actions">
-                      <button type="button" onClick={() => navigate('/history')}>
-                        Se i historik
-                      </button>
                       <button type="button" onClick={() => navigate(`/${getHomeSelectionSearch() ? `?${getHomeSelectionSearch()}` : ''}`)}>
                         Öva och spela in igen
                       </button>
@@ -625,9 +803,25 @@ function Analyze({ videoUrl: propVideoUrl, videoFile: propVideoFile, onBack }: A
                 ← Föregående
               </button>
               {currentStep === 'save' ? (
-                <button type="button" onClick={saveAnalysis} className="analyze-save-cta" disabled={isSaved}>
-                  {isSaved ? 'Sparad' : '💾 Spara analys'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={quickSaveAnalysis}
+                    disabled={isSaved || isExporting}
+                    title="Spara analysen i biblioteket utan att ladda ned"
+                  >
+                    {isExporting ? 'Sparar...' : '💾 Spara lokalt'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveAnalysis}
+                    className="analyze-save-cta"
+                    disabled={isSaved || isExporting}
+                    title="Exportera videon med metadata och ladda ned"
+                  >
+                    {isSaved ? 'Exporterad' : isExporting ? 'Exporterar...' : '⬇️ Exportera & Ladda ned'}
+                  </button>
+                </div>
               ) : (
                 <button type="button" onClick={goToNextStep} disabled={stepIndex === stepOrder.length - 1}>
                   Nästa →

@@ -2,15 +2,22 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import UploadButton from '../components/UploadButton.tsx'
 import AppNav from '../components/AppNav.tsx'
+import SkillPicker from '../components/SkillPicker.tsx'
 import { skills } from '../utils/skills.ts'
+import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
+import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
+import { addImportedVideoFile } from '../services/videoLibrary.ts'
 
 interface HomeProps {
-  onVideoSelect: (file: File | Blob, url: string) => void
+  onVideoSelect: (file: File | Blob, url: string, metadata?: EmbeddedAnalysisMetadata, libraryId?: string) => void
 }
 
 function Home({ onVideoSelect }: HomeProps): JSX.Element {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const [isImportingMultiple, setIsImportingMultiple] = useState(false)
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
 
   const sportFromRoute = searchParams.get('sport')
   const initialSport: 'beachvolley' | 'volleyboll' =
@@ -27,18 +34,15 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
   const [sportFilter, setSportFilter] = useState<'beachvolley' | 'volleyboll'>(
     initialSkill?.type ?? initialSport
   )
-  const [selectedSkillKey, setSelectedSkillKey] = useState<string>(
-    initialSkill ? `${initialSkill.name}::${initialSkill.type}` : ''
-  )
+  const [selectedSkillName, setSelectedSkillName] = useState<string>(initialSkill?.name ?? '')
 
   useEffect(() => {
     const params = new URLSearchParams()
     params.set('sport', sportFilter)
 
-    if (selectedSkillKey) {
-      const [name, type] = selectedSkillKey.split('::')
-      params.set('skill', name)
-      params.set('skillType', type)
+    if (selectedSkillName) {
+      params.set('skill', selectedSkillName)
+      params.set('skillType', sportFilter)
     }
 
     const nextSearch = params.toString()
@@ -46,20 +50,75 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     if (nextSearch !== currentSearch) {
       navigate({ pathname: '/', search: `?${nextSearch}` }, { replace: true })
     }
-  }, [sportFilter, selectedSkillKey, searchParams, navigate])
+  }, [sportFilter, selectedSkillName, searchParams, navigate])
 
-  const filteredSkills = skills.filter(s => s.type === sportFilter)
-
-  const handleVideoSelect = (file: File | Blob, url: string) => {
-    if (selectedSkillKey) {
-      const [name, type] = selectedSkillKey.split('::')
-      const skill = skills.find(s => s.name === name && s.type === type)
+  const handleVideoSelect = (
+    file: File | Blob,
+    url: string,
+    metadata?: EmbeddedAnalysisMetadata,
+    libraryId?: string
+  ) => {
+    if (selectedSkillName) {
+      const skill = skills.find(s => s.name === selectedSkillName && s.type === sportFilter)
       if (skill) {
-        navigate('/analyze', { state: { skill, videoFile: file, videoUrl: url } })
+        navigate('/analyze', {
+          state: { skill, videoFile: file, videoUrl: url, embeddedMetadata: metadata, libraryId }
+        })
         return
       }
     }
-    onVideoSelect(file, url)
+    onVideoSelect(file, url, metadata, libraryId)
+  }
+
+  const handleBatchImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.currentTarget.files ?? []).filter((file) =>
+      file.type.startsWith('video/')
+    )
+
+    if (files.length === 0) {
+      return
+    }
+
+    setImportError(null)
+    setIsImportingMultiple(true)
+    setImportProgress({ current: 0, total: files.length })
+
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index]
+
+        try {
+          let metadata: EmbeddedAnalysisMetadata | undefined
+
+          try {
+            const extracted = await extractMetadataFromVideo(file, file.name)
+            metadata = extracted?.metadata
+          } catch {
+            metadata = undefined
+          }
+
+          await addImportedVideoFile(file, metadata)
+          setImportProgress({ current: index + 1, total: files.length })
+        } catch (fileError) {
+          console.error(`Error importing ${file.name}:`, fileError)
+        }
+      }
+
+      alert(`Importerade ${files.length} video(s). Du kan se dem i historiken.`)
+      setImportProgress(null)
+
+      setTimeout(() => {
+        navigate('/history')
+      }, 500)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Import failed'
+      setImportError(message)
+      console.error('Batch import error:', error)
+    } finally {
+      setIsImportingMultiple(false)
+      setImportProgress(null)
+      e.currentTarget.value = ''
+    }
   }
 
   return (
@@ -74,50 +133,68 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
           Ladda upp eller spela in din teknik, analysera ruta för ruta och få tydlig feedback som lyfter nästa träning.
         </h2>
 
-        <div className="home-skill-picker">
-          <p className="home-skill-picker-label">Välj teknik att öva (valfritt)</p>
-
-          <div className="home-sport-toggle">
-            <button
-              type="button"
-              className={sportFilter === 'beachvolley' ? 'active' : ''}
-              onClick={() => { setSportFilter('beachvolley'); setSelectedSkillKey('') }}
-            >
-              Beachvolley
-            </button>
-            <button
-              type="button"
-              className={sportFilter === 'volleyboll' ? 'active' : ''}
-              onClick={() => { setSportFilter('volleyboll'); setSelectedSkillKey('') }}
-            >
-              Volleyboll
-            </button>
-          </div>
-
-          <div className="home-skill-grid">
-            {filteredSkills.map(skill => {
-              const key = `${skill.name}::${skill.type}`
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={`home-skill-chip ${selectedSkillKey === key ? 'active' : ''}`}
-                  onClick={() => setSelectedSkillKey(selectedSkillKey === key ? '' : key)}
-                >
-                  {skill.name}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <SkillPicker
+          label="Välj teknik att öva (valfritt)"
+          selectedSkillType={sportFilter}
+          selectedSkillName={selectedSkillName}
+          onSkillTypeChange={setSportFilter}
+          onSkillNameChange={setSelectedSkillName}
+          allowDeselect={true}
+        />
 
         <UploadButton onVideoSelect={handleVideoSelect} />
 
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <p>eller</p>
-          <Link to="/history" style={{ color: '#007bff', textDecoration: 'none' }}>
-            Se tidigare analyser →
-          </Link>
+        <div style={{ marginTop: '30px', padding: '20px', border: '2px dashed #0078d4', borderRadius: '8px', backgroundColor: '#f5f5f5' }}>
+          <h3>Importera flera videor</h3>
+          <p>Välj flera videofiler på en gång för att snabbt importera dem till biblioteket.</p>
+          <input
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={(e) => void handleBatchImport(e)}
+            disabled={isImportingMultiple}
+            style={{ display: 'none' }}
+            id="batch-upload"
+          />
+          <label
+            htmlFor="batch-upload"
+            style={{
+              display: 'inline-block',
+              padding: '10px 16px',
+              backgroundColor: isImportingMultiple ? '#ccc' : '#0078d4',
+              color: 'white',
+              borderRadius: '4px',
+              cursor: isImportingMultiple ? 'not-allowed' : 'pointer',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+            }}
+          >
+            {isImportingMultiple ? 'Importerar...' : 'Välj videor'}
+          </label>
+
+          {importProgress && (
+            <div style={{ marginTop: '10px' }}>
+              <p>
+                Importerar: {importProgress.current} / {importProgress.total}
+              </p>
+              <div style={{ width: '100%', height: '8px', backgroundColor: '#ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${(importProgress.current / importProgress.total) * 100}%`,
+                    height: '100%',
+                    backgroundColor: '#0078d4',
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {importError && (
+            <p style={{ marginTop: '10px', color: '#d13438' }}>
+              Fel under import: {importError}
+            </p>
+          )}
         </div>
       </main>
     </div>

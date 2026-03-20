@@ -31,16 +31,16 @@
 - Efter sparning visas handlingspanel: `Se i historik` / `Öva och spela in igen`
 
 ### History
-- Två nivåer:
-  1. Gamified dashboard (överst)
-  2. Gruppad analyslista (sport -> teknik)
-- Dashboard-kort:
-  - KPI-rad
-  - Level/XP-kort med badges
-  - Feedbacktrend över tid
-  - Vanligaste feedbackpunkter
-  - Teknikprogress-kort
-- Detaljvy behåller video, overlays, redigering och borttagning
+- Intent-baserad navigation:
+  - `Videos` för sök/öppna/redigera video
+  - `Insights` för statistik/trender
+- Mode-switch i sidhuvud med tydlig aktiv state
+- Videos-läge:
+  - Teknik-tabbar + listning i selector
+  - Detaljvy med video/overlay på huvudytan
+- Insights-läge:
+  - Tidsfilter + dashboard-kort
+  - Fokus på analys, inte enskild video
 
 ## Gamification-komponenter
 - XP-modell:
@@ -58,4 +58,10 @@
 - Från analys till beslut: användaren ska direkt se vad som upprepas över tid
 - Tydlig progression: varje sparad analys ska kännas som framsteg
 - Friktion först där det behövs: destruktiva actions kräver bekräftelsemodal
-- Allt viktigt ska vara synligt utan att lämna sidan
+- Tydlig intent före innehåll: användaren väljer först mål (Videos/Insights)
+
+## Responsive riktlinjer
+- History desktop: selector + content i två kolumner
+- History mobile: content först, selector under
+- Action-knappar i listkort får inte stretchas till full höjd
+- Analyze steg 1: hjälpinformation under videoytan för naturligt läsflöde

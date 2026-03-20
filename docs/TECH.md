@@ -16,25 +16,25 @@
 
 ## State-hantering
 - React hooks (`useState`, `useRef`, `useEffect`, `useCallback`)
-- `useLocalStorage<T>` – custom hook i `src/hooks/useLocalStorage.ts`
 - Routerstate (`location.state`) för att skicka valda `Skill`-objekt mellan sidor
+- Query params för History mode (`view=videos|insights`)
 
 ## Persistens
-- **localStorage** – nyckel `beach-volley-analyses`
-- Datamodell per analys:
+- **IndexedDB** (`bcoach-video-library`, store `videos`)
+- Datamodell:
   ```ts
-  interface VideoAnalysis {
+  interface VideoLibraryRecord {
     id: string
-    videoUrl: string
-    videoName: string
-    shapes: Shape[]
-    feedback: string[]
-    nextSteps: string[]
-    timestamp: number
-    skillName?: string
-    skillType?: 'beachvolley' | 'volleyboll'
+    name: string
+    mimeType: string
+    size: number
+    createdAt: number
+    source: 'imported' | 'exported'
+    metadata?: EmbeddedAnalysisMetadata
+    blob: Blob
   }
   ```
+- Metadata-hydrering för äldre poster: extraktion från blob och `upsert`
 
 ## Video
 - **HTML5 `<video>`** med forward ref (`VideoPlayer.tsx`)
@@ -42,6 +42,15 @@
 - **MediaRecorder API** för inspelning (`UploadButton.tsx`)
   - Codec-fallback: `vp9 → vp8 → webm → mp4`
 - Varaktighetskalibrering: fallback till `video.seekable.end(0)`
+
+## FFmpeg metadata pipeline
+- `@ffmpeg/ffmpeg` + `@ffmpeg/util`
+- Core-filer hostas lokalt i `public/ffmpeg/`
+- Core laddas via runtime blob URL i `ffmpegClient`
+- Metadata embed/extract i `videoMetadata.ts`:
+  - Write: `-metadata comment=bcoach:<base64-json>`
+  - Read: `-f ffmetadata` + parse av `comment=`
+- Vite config exkluderar ffmpeg-paket från dep optimizer för stabil dev/hmr
 
 ## Ritverktyg
 - **Canvas API** – två komponenter:
@@ -73,6 +82,15 @@
   - `advice: string[]` – teknikspecifika råd
   - `nextSteps: string[]` – 4 konkreta träningsuppgifter per teknik
 - Täcker ~10 tekniker per sport (totalt 20+)
+
+## History-arkitektur
+- `History` använder två intent-vyer:
+  - Videos
+  - Insights
+- Komponenter:
+  - `HistorySkillGroups` (teknik-tabbar + videolista)
+  - `HistoryDashboard` (insights)
+  - `historyData.ts` (beräkningar: KPI, trend, topics, skill progress)
 
 ## Backend (framtid)
 - Firebase
