@@ -319,6 +319,54 @@ body {
   50% { opacity: 0.3; }
 }
 
+.camera-ctrl-btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.camera-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.recording-start-btn {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.recording-start-btn:hover {
+  background: #1e7e34;
+}
+
+.recording-cancel-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.recording-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .recording-stop-btn {
   background: #dc3545;
   color: #fff;
@@ -333,6 +381,80 @@ body {
 
 .recording-stop-btn:hover {
   background: #b02a37;
+}
+
+.recording-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.recording-countdown-number {
+  font-size: 22vmin;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 4px 32px rgba(0, 0, 0, 0.7);
+  line-height: 1;
+  animation: countdown-pulse 1s ease-out forwards;
+}
+
+@keyframes countdown-pulse {
+  0%   { transform: scale(1.4); opacity: 0.6; }
+  40%  { transform: scale(1);   opacity: 1;   }
+  85%  { transform: scale(0.92); opacity: 1;  }
+  100% { transform: scale(0.85); opacity: 0.5; }
+}
+
+.camera-delay-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.recording-delay-select {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.recording-delay-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.recording-converting-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.recording-converting-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Analyze page styles */
