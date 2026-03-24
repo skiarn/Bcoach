@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import UploadButton from '../components/UploadButton.tsx'
 import AppNav from '../components/AppNav.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
@@ -35,6 +35,17 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     initialSkill?.type ?? initialSport
   )
   const [selectedSkillName, setSelectedSkillName] = useState<string>(initialSkill?.name ?? '')
+  const [isHeroExpanded, setIsHeroExpanded] = useState<boolean>(!initialSkill?.name)
+
+  const handleSkillChange = (skillType: 'beachvolley' | 'volleyboll', skillName: string) => {
+    setSportFilter(skillType)
+    setSelectedSkillName(skillName)
+    if (skillName) {
+      setIsHeroExpanded(false)
+    } else {
+      setIsHeroExpanded(true)
+    }
+  }
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -124,24 +135,32 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
   return (
     <div className="home">
       <AppNav />
-      <header>
-        <p className="home-hero-kicker">Din digitala tränarpartner</p>
-        <h1 className="home-hero-title">Träna smartare. Spela vassare.</h1>
+      <header className={`home-hero ${isHeroExpanded ? 'expanded' : 'collapsed'}`}>
+        <button
+          type="button"
+          onClick={() => setIsHeroExpanded(!isHeroExpanded)}
+          className="home-hero-kicker-btn"
+          title={isHeroExpanded ? 'Minimera' : 'Expandera'}
+        >
+          <p className="home-hero-kicker">{isHeroExpanded ? '▼' : '▶'} Din digitala tränarpartner</p>
+        </button>
+        <div className={`hero-content ${isHeroExpanded ? 'visible' : 'hidden'}`}>
+          <h1 className="home-hero-title">Träna smartare. Spela vassare.</h1>
+          <h2 className="home-hero-subtitle">
+            Ladda upp eller spela in din teknik, analysera ruta för ruta och få tydlig feedback som lyfter nästa träning.
+          </h2>
+          <SkillPicker
+            label="Välj teknik att öva (valfritt)"
+            selectedSkillType={sportFilter}
+            selectedSkillName={selectedSkillName}
+            onSkillTypeChange={(type) => handleSkillChange(type, selectedSkillName)}
+            onSkillNameChange={(name) => handleSkillChange(sportFilter, name)}
+            allowDeselect={true}
+            className="home-hero-skill-picker"
+          />
+        </div>
       </header>
       <main>
-        <h2 className="home-hero-subtitle">
-          Ladda upp eller spela in din teknik, analysera ruta för ruta och få tydlig feedback som lyfter nästa träning.
-        </h2>
-
-        <SkillPicker
-          label="Välj teknik att öva (valfritt)"
-          selectedSkillType={sportFilter}
-          selectedSkillName={selectedSkillName}
-          onSkillTypeChange={setSportFilter}
-          onSkillNameChange={setSelectedSkillName}
-          allowDeselect={true}
-        />
-
         <UploadButton onVideoSelect={handleVideoSelect} />
 
         <div style={{ marginTop: '30px', padding: '20px', border: '2px dashed #0078d4', borderRadius: '8px', backgroundColor: '#f5f5f5' }}>

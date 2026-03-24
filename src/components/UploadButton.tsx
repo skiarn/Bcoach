@@ -299,8 +299,8 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                   <span className="recording-indicator">● REC</span>
                 )}
 
-                {/* Camera controls — available in preview and recording phases */}
-                {countdown === null && (
+                {/* Camera controls — available in preview phase only */}
+                {cameraPhase === 'preview' && countdown === null && (
                   <>
                     <button
                       type="button"
@@ -308,7 +308,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       className="camera-ctrl-btn"
                       title={facingMode === 'user' ? 'Byt till bakre kamera' : 'Byt till frontkamera'}
                     >
-                      {facingMode === 'user' ? '🔄 Bakre' : '🔄 Fram'}
+                      🔄
                     </button>
 
                     <button
@@ -317,7 +317,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       className="camera-ctrl-btn"
                       title={isLandscape ? 'Byt till stående' : 'Byt till liggande'}
                     >
-                      {isLandscape ? '📱 Stående' : '📺 Liggande'}
+                      {isLandscape ? '↕️' : '↔️'}
                     </button>
                   </>
                 )}
@@ -329,46 +329,50 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       onClick={cancelCamera}
                       className="recording-cancel-btn"
                     >
-                      ✕ Avbryt
+                      ✕
                     </button>
                   ) : (
-                    <>
-                      <label className="camera-delay-label">
-                        Fördröjning
+                    <div className="recording-controls">
+                      <div className="recording-settings-group">
                         <select
+                          id="delay-select"
                           value={recordingDelay}
                           onChange={(e) => setRecordingDelay(Number(e.target.value))}
                           className="recording-delay-select"
+                          title="Inspelningsfördröjning"
                         >
-                          <option value={0}>Ingen</option>
-                          <option value={3}>3 s</option>
-                          <option value={5}>5 s</option>
-                          <option value={10}>10 s</option>
+                          <option value={0}>⏱️ Ingen</option>
+                          <option value={3}>⏱️ 3s</option>
+                          <option value={5}>⏱️ 5s</option>
+                          <option value={10}>⏱️ 10s</option>
                         </select>
-                      </label>
+                      </div>
                       <button
                         type="button"
                         onClick={handleStartWithDelay}
                         className="recording-start-btn"
+                        title="Starta inspelning"
                       >
-                        ⏺ Starta inspelning
+                        ⏺️
                       </button>
                       <button
                         type="button"
                         onClick={cancelCamera}
                         className="recording-cancel-btn"
+                        title="Avbryt"
                       >
-                        ✕ Avbryt
+                        ✕
                       </button>
-                    </>
+                    </div>
                   )
                 ) : (
                   <button
                     type="button"
                     onClick={stopRecording}
                     className="recording-stop-btn"
+                    title="Stoppa inspelning"
                   >
-                    ⏹ Stoppa inspelning
+                    ⏹️
                   </button>
                 )}
               </div>
