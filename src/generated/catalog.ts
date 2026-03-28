@@ -71,6 +71,46 @@ export const generatedSports: GeneratedSportDefinition[] = [
       "en": "Tennis",
       "sv": "Tennis"
     }
+  },
+  {
+    "id": "paddel",
+    "enabled": true,
+    "sortOrder": 40,
+    "aliases": [
+      "padel",
+      "paddle-tennis"
+    ],
+    "labels": {
+      "en": "Padel",
+      "sv": "Padel"
+    }
+  },
+  {
+    "id": "gym",
+    "enabled": true,
+    "sortOrder": 50,
+    "aliases": [
+      "gym-workout",
+      "strength-training",
+      "fitness-gym"
+    ],
+    "labels": {
+      "en": "Gym",
+      "sv": "Gym"
+    }
+  },
+  {
+    "id": "golf",
+    "enabled": true,
+    "sortOrder": 60,
+    "aliases": [
+      "golfing",
+      "driving-range"
+    ],
+    "labels": {
+      "en": "Golf",
+      "sv": "Golf"
+    }
   }
 ]
 
@@ -1096,6 +1136,1066 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Kör 4 x 12 backhand-volley med samma träffpunkt varje gång.",
           "Öva övergång från baslinje till nät med split-step vid volley.",
           "Filma framifrån och kontrollera racketvinkel i träffögonblicket."
+        ]
+      }
+    }
+  },
+  {
+    "id": "paddel:forehand",
+    "sportId": "paddel",
+    "enabled": true,
+    "sortOrder": 260,
+    "videoUrls": [
+      "https://youtu.be/2M4fA3qvLx8"
+    ],
+    "texts": {
+      "en": {
+        "name": "Forehand",
+        "advice": [
+          "Prepare early and keep a compact swing for better control in the glass game.",
+          "Meet the ball in front of your body and keep your head still through contact.",
+          "Use your legs and core to create stable pace instead of forcing with the arm.",
+          "Recover quickly to ready position after every shot."
+        ],
+        "nextSteps": [
+          "Hit 3 x 20 forehands crosscourt with focus on margin over the net.",
+          "Alternate 10 deep forehands and 10 controlled shorter balls.",
+          "Record from the side and review contact point and balance.",
+          "Finish with 15 forehands in a row at controlled tempo."
+        ]
+      },
+      "sv": {
+        "name": "Forehand",
+        "advice": [
+          "Förbered slaget tidigt och håll en kompakt sving för bättre kontroll i glas-spelet.",
+          "Träffa bollen framför kroppen och håll huvudet stilla genom träffen.",
+          "Använd ben och bål för stabil fart i stället för att forcera med armen.",
+          "Återgå snabbt till redo-position efter varje slag."
+        ],
+        "nextSteps": [
+          "Kör 3 x 20 forehands crosscourt med fokus på marginal över nät.",
+          "Växla 10 djupa forehands och 10 kortare kontrollerade bollar.",
+          "Filma från sidan och kontrollera träffpunkt och balans.",
+          "Avsluta med 15 forehands i rad i kontrollerat tempo."
+        ]
+      }
+    }
+  },
+  {
+    "id": "paddel:backhand",
+    "sportId": "paddel",
+    "enabled": true,
+    "sortOrder": 270,
+    "videoUrls": [
+      "https://youtu.be/kM8dQ1f9Q6E"
+    ],
+    "texts": {
+      "en": {
+        "name": "Backhand",
+        "advice": [
+          "Set the racket early and keep your non-dominant shoulder pointed toward the ball.",
+          "Stay low with bent knees to handle lower padel bounces.",
+          "Drive through the ball with a smooth follow-through toward target.",
+          "Recover to central position immediately after contact."
+        ],
+        "nextSteps": [
+          "Do 3 x 15 backhands crosscourt with steady height and depth.",
+          "Practice 10 backhands after wall rebound on each side.",
+          "Record from behind and check shoulder rotation and spacing.",
+          "Complete 12 backhands in a row before increasing speed."
+        ]
+      },
+      "sv": {
+        "name": "Backhand",
+        "advice": [
+          "Sätt racket tidigt och håll den icke-dominanta axeln riktad mot bollen.",
+          "Stå lågt med böjda knän för att hantera lägre paddelstudsar.",
+          "Driv igenom bollen med mjuk uppföljning mot målet.",
+          "Ta dig snabbt tillbaka till mittenposition efter träffen."
+        ],
+        "nextSteps": [
+          "Kör 3 x 15 backhands crosscourt med jämn höjd och djup.",
+          "Öva 10 backhands efter väggstuds på varje sida.",
+          "Filma bakifrån och kontrollera axelrotation och avstånd till bollen.",
+          "Klara 12 backhands i rad innan du ökar tempot."
+        ]
+      }
+    }
+  },
+  {
+    "id": "paddel:serve",
+    "sportId": "paddel",
+    "enabled": true,
+    "sortOrder": 280,
+    "videoUrls": [
+      "https://youtu.be/9nD3r3v3Y7Y"
+    ],
+    "texts": {
+      "en": {
+        "name": "Serve",
+        "advice": [
+          "Use a consistent low toss and contact below waist level according to padel rules.",
+          "Aim for spin and placement before maximum power.",
+          "Keep your body balanced and step forward into the court after contact.",
+          "Prepare quickly for the first volley after the serve."
+        ],
+        "nextSteps": [
+          "Practice 30 serves to a single target box with controlled pace.",
+          "Alternate wide serves and body serves in sets of 10.",
+          "Record from the side and check toss height and contact timing.",
+          "Play point-start drills focused on serve plus first volley."
+        ]
+      },
+      "sv": {
+        "name": "Serve",
+        "advice": [
+          "Använd ett konsekvent lågt kast och träffa bollen under midjehöjd enligt paddelregler.",
+          "Prioritera spinn och placering före maximal kraft.",
+          "Håll kroppen i balans och kliv fram in i banan efter träffen.",
+          "Förbered dig snabbt för första volleyn efter serven."
+        ],
+        "nextSteps": [
+          "Öva 30 servar mot samma ruta i kontrollerat tempo.",
+          "Varva bred serve och kroppsserve i set om 10.",
+          "Filma från sidan och kontrollera kastets höjd och träfftiming.",
+          "Spela poängstart-övningar med fokus på serve plus första volley."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:squat",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 290,
+    "videoUrls": [
+      "https://youtu.be/ultWZbUMPL8"
+    ],
+    "texts": {
+      "en": {
+        "name": "Back Squat",
+        "advice": [
+          "Brace your core before each rep and keep a neutral spine.",
+          "Keep knees tracking over toes and maintain full-foot pressure.",
+          "Descend with control and keep the chest lifted.",
+          "Drive up powerfully while maintaining balance."
+        ],
+        "nextSteps": [
+          "Perform 4 x 6 reps at moderate load with consistent depth.",
+          "Film from the side to check bar path and back angle.",
+          "Add a pause squat set to improve bottom position.",
+          "Progress weight only if technique stays stable."
+        ]
+      },
+      "sv": {
+        "name": "Knäböj",
+        "advice": [
+          "Spänn bålen före varje repetition och håll neutral ryggrad.",
+          "Låt knäna följa tårnas riktning och behåll tryck i hela foten.",
+          "Gå ner kontrollerat med stolt bröstkorg.",
+          "Driv upp kraftfullt utan att tappa balansen."
+        ],
+        "nextSteps": [
+          "Kör 4 x 6 repetitioner med medelvikt och jämn teknik.",
+          "Filma från sidan och kontrollera stångbana och ryggvinkel.",
+          "Lägg in ett paus-set i bottenläget för bättre kontroll.",
+          "Öka vikt först när tekniken är stabil."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:deadlift",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 300,
+    "videoUrls": [
+      "https://youtu.be/op9kVnSso6Q"
+    ],
+    "texts": {
+      "en": {
+        "name": "Deadlift",
+        "advice": [
+          "Set the bar close to your shins and keep lats tight before lifting.",
+          "Push the floor away and keep the bar path close to the body.",
+          "Lock out by extending hips fully without overleaning back.",
+          "Reset your position between reps to maintain consistency."
+        ],
+        "nextSteps": [
+          "Do 5 x 3 reps focusing on clean setup each time.",
+          "Record from 45 degrees to review hip and shoulder timing.",
+          "Add light tempo deadlifts for position control.",
+          "Increase load gradually while maintaining bar speed."
+        ]
+      },
+      "sv": {
+        "name": "Marklyft",
+        "advice": [
+          "Placera stången nära smalbenen och håll latsen aktiverad före lyft.",
+          "Tryck golvet från dig och håll stången nära kroppen.",
+          "Lås ut med höften utan att översträcka ländryggen.",
+          "Återställ startposition mellan reps för jämn kvalitet."
+        ],
+        "nextSteps": [
+          "Kör 5 x 3 repetitioner med fokus på ren setup varje gång.",
+          "Filma i 45 graders vinkel för att analysera höft- och axeltiming.",
+          "Lägg in lätta tempomarklyft för positionskontroll.",
+          "Öka belastningen gradvis om stånghastigheten hålls uppe."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:bench-press",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 310,
+    "videoUrls": [
+      "https://youtu.be/rT7DgCr-3pg"
+    ],
+    "texts": {
+      "en": {
+        "name": "Bench Press",
+        "advice": [
+          "Set your upper back tightly against the bench and keep feet planted.",
+          "Lower the bar with control to mid-chest while keeping wrists stacked.",
+          "Press up with even force from both arms and stable elbow path.",
+          "Maintain full-body tension through every rep."
+        ],
+        "nextSteps": [
+          "Run 4 x 5 reps at controlled tempo.",
+          "Film from front and side to check bar path symmetry.",
+          "Add a paused bench set to improve chest control.",
+          "Increase load in small steps only after clean sets."
+        ]
+      },
+      "sv": {
+        "name": "Bänkpress",
+        "advice": [
+          "Sätt övre ryggen stabilt mot bänken och håll fötterna i golvet.",
+          "Sänk stången kontrollerat mot mitt på bröstet med stabila handleder.",
+          "Pressa upp jämnt med båda armarna och kontrollerad armbågsbana.",
+          "Behåll helkroppsspänning genom hela setet."
+        ],
+        "nextSteps": [
+          "Kör 4 x 5 repetitioner i kontrollerat tempo.",
+          "Filma framifrån och från sidan för att kontrollera stångbanan.",
+          "Lägg till ett paus-set för bättre kontroll på bröstet.",
+          "Öka vikten i små steg först efter rena set."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:overhead-press",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 320,
+    "videoUrls": [
+      "https://youtu.be/2yjwXTZQDDI"
+    ],
+    "texts": {
+      "en": {
+        "name": "Overhead Press",
+        "advice": [
+          "Squeeze glutes and core to avoid overextending the lower back.",
+          "Start with bar close to upper chest and wrists stacked.",
+          "Press in a straight path and move head through at lockout.",
+          "Lower under control to the same start position."
+        ],
+        "nextSteps": [
+          "Perform 4 x 6 reps with strict form.",
+          "Practice 2 lighter back-off sets for technique.",
+          "Record side view and check rib flare and bar path.",
+          "Add small load increases only when reps stay strict."
+        ]
+      },
+      "sv": {
+        "name": "Militärpress",
+        "advice": [
+          "Spänn säte och bål för att undvika överdriven svank.",
+          "Starta med stången nära övre bröstet och stabila handleder.",
+          "Pressa rakt upp och för huvudet igenom i toppläget.",
+          "Sänk kontrollerat tillbaka till samma startposition."
+        ],
+        "nextSteps": [
+          "Kör 4 x 6 strikta repetitioner.",
+          "Lägg till 2 lättare teknikset efter arbetsseten.",
+          "Filma från sidan och kontrollera revbensposition och stångbana.",
+          "Öka belastning först när alla reps är stabila."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:pull-up",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 330,
+    "videoUrls": [
+      "https://youtu.be/eGo4IYlbE5g"
+    ],
+    "texts": {
+      "en": {
+        "name": "Pull-Up",
+        "advice": [
+          "Begin from a full hang with active shoulders.",
+          "Pull elbows down toward your ribs to engage the back.",
+          "Keep your body tight and avoid excessive swinging.",
+          "Lower under control to full extension each rep."
+        ],
+        "nextSteps": [
+          "Complete 5 sets near technical failure with perfect form.",
+          "Use assisted pull-ups if you cannot keep full range.",
+          "Add isometric holds at the top for 5-10 seconds.",
+          "Track total weekly quality reps and progress gradually."
+        ]
+      },
+      "sv": {
+        "name": "Chins",
+        "advice": [
+          "Starta från fullt häng med aktiva skuldror.",
+          "Dra armbågarna ner mot sidorna för att koppla in ryggen.",
+          "Håll kroppen spänd och undvik överdriven gungning.",
+          "Sänk kontrollerat till full utsträckning i varje rep."
+        ],
+        "nextSteps": [
+          "Kör 5 set nära teknisk max med ren teknik.",
+          "Använd assisterad variant om full rörelse inte hålls.",
+          "Lägg in isometriska topplägen på 5-10 sekunder.",
+          "Följ upp total mängd kvalitetsreps varje vecka."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:barbell-row",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 340,
+    "videoUrls": [
+      "https://youtu.be/vT2GjY_Umpw"
+    ],
+    "texts": {
+      "en": {
+        "name": "Barbell Row",
+        "advice": [
+          "Hinge at the hips and keep your torso stable throughout the set.",
+          "Pull the bar toward lower ribs while keeping elbows close.",
+          "Avoid jerking with the lower back to move the weight.",
+          "Control the eccentric phase for better back activation."
+        ],
+        "nextSteps": [
+          "Do 4 x 8 reps with strict tempo.",
+          "Film side view and monitor torso angle consistency.",
+          "Add a lighter set with 2-second pause at the top.",
+          "Increase load only if no momentum is used."
+        ]
+      },
+      "sv": {
+        "name": "Skivstångsrodd",
+        "advice": [
+          "Fäll i höften och håll bålen stabil under hela setet.",
+          "Dra stången mot nedre revbenen med armbågar nära kroppen.",
+          "Undvik att rycka med ländryggen för att flytta vikten.",
+          "Bromsa den excentriska fasen för bättre ryggkontakt."
+        ],
+        "nextSteps": [
+          "Kör 4 x 8 repetitioner i strikt tempo.",
+          "Filma från sidan och kontrollera att överkroppsvinkeln hålls.",
+          "Lägg till ett lättare set med 2 sekunders stopp i toppläget.",
+          "Öka vikt först när du kan ro utan momentum."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:lat-pulldown-machine",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 350,
+    "videoUrls": [
+      "https://youtu.be/CAwf7n6Luuc"
+    ],
+    "texts": {
+      "en": {
+        "name": "Lat Pulldown (Machine)",
+        "advice": [
+          "Set thighs firmly under the pad and maintain tall posture.",
+          "Pull bar to upper chest by driving elbows down and back.",
+          "Avoid leaning excessively; keep movement controlled.",
+          "Return slowly to full stretch at the top."
+        ],
+        "nextSteps": [
+          "Perform 4 x 10 reps with smooth rhythm.",
+          "Use a grip width that keeps shoulders comfortable.",
+          "Pause 1 second at the bottom of each rep.",
+          "Progress resistance when all reps are clean."
+        ]
+      },
+      "sv": {
+        "name": "Latsdrag (Maskin)",
+        "advice": [
+          "Lås fast låren under stödet och sitt högt genom bröstet.",
+          "Dra ner handtaget mot övre bröstet med armbågar ner och bak.",
+          "Undvik att luta bak för mycket och håll rörelsen kontrollerad.",
+          "Släpp tillbaka långsamt till fullt utsträckt toppläge."
+        ],
+        "nextSteps": [
+          "Kör 4 x 10 repetitioner med jämn rytm.",
+          "Välj greppbredd som känns stabil i axlarna.",
+          "Pausa 1 sekund i botten på varje repetition.",
+          "Öka motstånd när alla reps är tekniskt rena."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:leg-press-machine",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 360,
+    "videoUrls": [
+      "https://youtu.be/IZxyjW7MPJQ"
+    ],
+    "texts": {
+      "en": {
+        "name": "Leg Press (Machine)",
+        "advice": [
+          "Position feet shoulder-width and keep knees aligned with toes.",
+          "Lower the platform with control until comfortable depth.",
+          "Press through mid-foot without locking knees aggressively.",
+          "Keep hips and lower back stable against the seat."
+        ],
+        "nextSteps": [
+          "Run 4 x 12 reps at moderate resistance.",
+          "Adjust foot placement to find balanced pressure.",
+          "Add one slower eccentric set for control.",
+          "Increase load when depth and alignment are consistent."
+        ]
+      },
+      "sv": {
+        "name": "Benpress (Maskin)",
+        "advice": [
+          "Placera fötterna axelbrett och håll knäna i linje med tårna.",
+          "Sänk plattan kontrollerat till ett stabilt djup.",
+          "Pressa genom mitten av foten utan att låsa knäna hårt.",
+          "Behåll höft och ländrygg stabilt mot sätet."
+        ],
+        "nextSteps": [
+          "Kör 4 x 12 repetitioner med medelhögt motstånd.",
+          "Justera fotplacering tills trycket känns jämnt.",
+          "Lägg in ett långsamt excentriskt set för kontroll.",
+          "Öka belastning när djup och knälinje är konsekventa."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:chest-press-machine",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 370,
+    "videoUrls": [
+      "https://youtu.be/sqNwDkUU_Ps"
+    ],
+    "texts": {
+      "en": {
+        "name": "Chest Press (Machine)",
+        "advice": [
+          "Set seat height so handles align with mid-chest.",
+          "Keep shoulders down and back throughout the movement.",
+          "Press smoothly without bouncing at end range.",
+          "Return with control and maintain tension."
+        ],
+        "nextSteps": [
+          "Perform 3 x 12 reps with full range.",
+          "Use 2-second lowering on each repetition.",
+          "Monitor left-right balance during pressing.",
+          "Add resistance only after all reps stay controlled."
+        ]
+      },
+      "sv": {
+        "name": "Bröstpress (Maskin)",
+        "advice": [
+          "Justera sitsen så handtagen ligger i höjd med mitten av bröstet.",
+          "Håll skuldrorna nere och bak genom hela rörelsen.",
+          "Pressa jämnt utan att studsa i ytterlägen.",
+          "Återgå kontrollerat och behåll spänning i muskeln."
+        ],
+        "nextSteps": [
+          "Kör 3 x 12 repetitioner med full rörelsebana.",
+          "Sänk vikten i 2 sekunder per repetition.",
+          "Följ upp vänster-höger balans i pressen.",
+          "Öka motstånd först när alla reps är kontrollerade."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:seated-row-machine",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 380,
+    "videoUrls": [
+      "https://youtu.be/GZbfZ033f74"
+    ],
+    "texts": {
+      "en": {
+        "name": "Seated Row (Machine)",
+        "advice": [
+          "Sit tall with neutral spine and chest open.",
+          "Initiate by pulling shoulder blades back before elbows bend.",
+          "Row handles toward lower ribs without shrugging shoulders.",
+          "Control the return and keep posture stable."
+        ],
+        "nextSteps": [
+          "Complete 4 x 10 reps with steady cadence.",
+          "Pause briefly in the contracted position each rep.",
+          "Film from side to check torso remains upright.",
+          "Progress weight gradually while preserving form."
+        ]
+      },
+      "sv": {
+        "name": "Sittande rodd (Maskin)",
+        "advice": [
+          "Sitt upprätt med neutral ryggrad och öppen bröstkorg.",
+          "Starta draget genom att föra skulderbladen bakåt.",
+          "Dra handtaget mot nedre revben utan att höja axlarna.",
+          "Bromsa tillbaka kontrollerat och behåll hållningen."
+        ],
+        "nextSteps": [
+          "Kör 4 x 10 repetitioner i jämn takt.",
+          "Pausa kort i toppläget på varje repetition.",
+          "Filma från sidan för att kontrollera att bålen är stilla.",
+          "Öka vikten gradvis så länge tekniken håller."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:treadmill-run",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 390,
+    "videoUrls": [
+      "https://youtu.be/_kGESn8ArrU"
+    ],
+    "texts": {
+      "en": {
+        "name": "Treadmill Run",
+        "advice": [
+          "Keep posture tall with slight forward lean from the ankles.",
+          "Land under your center of mass with quick light steps.",
+          "Maintain relaxed shoulders and consistent arm swing.",
+          "Control pace changes gradually rather than abruptly."
+        ],
+        "nextSteps": [
+          "Warm up 8 minutes at easy pace before intervals.",
+          "Do 6 x 1 minute hard efforts with 1 minute easy recovery.",
+          "Record cadence and heart rate for pacing feedback.",
+          "Cool down 5-8 minutes and note perceived effort."
+        ]
+      },
+      "sv": {
+        "name": "Löpband",
+        "advice": [
+          "Spring högt med lätt framåtlut från anklarna.",
+          "Sätt ner foten under kroppen med korta snabba steg.",
+          "Håll axlarna avslappnade och armföringen jämn.",
+          "Ändra tempo gradvis för bättre kontroll."
+        ],
+        "nextSteps": [
+          "Värm upp 8 minuter i lugnt tempo före intervaller.",
+          "Kör 6 x 1 minut hårt med 1 minut lugn jogg mellan.",
+          "Logga kadens och puls för att styra intensitet.",
+          "Varva ner 5-8 minuter och notera ansträngningsnivå."
+        ]
+      }
+    }
+  },
+  {
+    "id": "gym:stationary-bike",
+    "sportId": "gym",
+    "enabled": true,
+    "sortOrder": 400,
+    "videoUrls": [
+      "https://youtu.be/p4xJf9w4fH4"
+    ],
+    "texts": {
+      "en": {
+        "name": "Stationary Bike",
+        "advice": [
+          "Adjust saddle height so knees stay slightly bent at bottom stroke.",
+          "Keep cadence smooth and avoid mashing heavy gears.",
+          "Maintain neutral spine and relaxed grip on handlebars.",
+          "Control breathing rhythm to match effort zones."
+        ],
+        "nextSteps": [
+          "Ride 30 minutes with 5 progressive intensity blocks.",
+          "Include 8 x 30-second high-cadence efforts.",
+          "Track average cadence and resistance each session.",
+          "Finish with easy spin and short mobility work."
+        ]
+      },
+      "sv": {
+        "name": "Motionscykel",
+        "advice": [
+          "Justera sadelhöjd så knät är lätt böjt i nederläget.",
+          "Håll jämn kadens och undvik att trycka för tung växel.",
+          "Behåll neutral rygg och avslappnat grepp om styret.",
+          "Synka andningen med intensitetsnivån."
+        ],
+        "nextSteps": [
+          "Cykla 30 minuter med 5 progressiva intensitetsblock.",
+          "Lägg in 8 x 30 sekunder med hög kadens.",
+          "Följ upp snittkadens och motstånd varje pass.",
+          "Avsluta med lugn nedvarvning och kort rörlighet."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:grip-setup",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 410,
+    "videoUrls": [
+      "https://youtu.be/GHZkrx5W4bU"
+    ],
+    "texts": {
+      "en": {
+        "name": "Grip and Setup",
+        "advice": [
+          "Build a neutral grip and place hands consistently for every club.",
+          "Set posture with slight hip hinge and balanced pressure in both feet.",
+          "Align feet"
+        ],
+        "nextSteps": [
+          "hips"
+        ]
+      },
+      "sv": {
+        "name": "Grepp och uppställning",
+        "advice": [
+          "Bygg ett neutralt grepp och placera händerna likadant inför varje slag.",
+          "Ställ upp med lätt höftfällning och balanserat tryck i båda fötter.",
+          "Rikta fötter"
+        ],
+        "nextSteps": [
+          "höfter och axlar parallellt med mållinjen.",
+          "Gör uppställningen repeterbar så svingen startar från samma läge."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:driver-swing",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 420,
+    "videoUrls": [
+      "https://youtu.be/Q9N2Q9X4f7k"
+    ],
+    "texts": {
+      "en": {
+        "name": "Driver Swing",
+        "advice": [
+          "Use a wider stance and tee the ball high enough for an upward strike.",
+          "Create width in the backswing and maintain tempo in transition.",
+          "Shift pressure into lead side before impact for consistent launch.",
+          "Finish balanced with chest facing target."
+        ],
+        "nextSteps": [
+          "Hit 3 x 10 drives focusing on center-face contact.",
+          "Track launch direction and adjust alignment first.",
+          "Record swing from face-on to check weight shift.",
+          "End with 10 fairway-finder swings at 80 percent speed."
+        ]
+      },
+      "sv": {
+        "name": "Driversving",
+        "advice": [
+          "Använd bredare stance och peggad boll för uppåtgående träff.",
+          "Skapa bredd i baksvingen och behåll tempot i övergången.",
+          "Flytta trycket till främre fot före träff för stabil launch.",
+          "Avsluta i balans med bröstet mot målet."
+        ],
+        "nextSteps": [
+          "Kör 3 x 10 utslag med fokus på centrerad träffyta.",
+          "Följ startriktning och justera sikte först.",
+          "Filma framifrån för att kontrollera viktförflyttning.",
+          "Avsluta med 10 kontrollerade utslag på 80 procent fart."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:iron-full-swing",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 430,
+    "videoUrls": [
+      "https://youtu.be/4v8h5S8vQK0"
+    ],
+    "texts": {
+      "en": {
+        "name": "Iron Full Swing",
+        "advice": [
+          "Place the ball slightly forward of center with stable posture.",
+          "Compress the ball by striking ball first"
+        ],
+        "nextSteps": [
+          "then turf.",
+          "Control low point with steady head position and lead-side pressure.",
+          "Maintain rhythm and avoid forcing extra speed."
+        ]
+      },
+      "sv": {
+        "name": "Järnsving",
+        "advice": [
+          "Placera bollen något framför mitten med stabil uppställning.",
+          "Komprimera bollen genom att träffa boll före mark.",
+          "Styr lågpunkt med stilla huvud och tryck på främre sida.",
+          "Behåll rytm och undvik att forcera extra fart."
+        ],
+        "nextSteps": [
+          "Slå 4 x 8 slag med järn-7 mot samma mål.",
+          "Använd träfftejp för att kontrollera bollträff i klubbhuvudet.",
+          "Kör 10 trekvartssvingar för bättre träffkontroll.",
+          "Logga carry-intervall för varje järn."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:fairway-wood-hybrid",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 440,
+    "videoUrls": [
+      "https://youtu.be/n9yYQ4jJxR8"
+    ],
+    "texts": {
+      "en": {
+        "name": "Fairway Wood and Hybrid",
+        "advice": [
+          "Keep ball position slightly forward and sweep through impact.",
+          "Use smooth tempo to improve centered contact from turf.",
+          "Stay tall through the chest to avoid steep angle of attack.",
+          "Choose club based on distance window"
+        ],
+        "nextSteps": [
+          "not maximum distance."
+        ]
+      },
+      "sv": {
+        "name": "Fairwaywood och hybrid",
+        "advice": [
+          "Håll bollposition något fram och svep genom träffen.",
+          "Använd jämnt tempo för bättre centrerad träff från marken.",
+          "Håll bröstet uppe för att undvika för brant attackvinkel.",
+          "Välj klubba efter avståndsfönster"
+        ],
+        "nextSteps": [
+          "inte maxlängd."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:chip-shot",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 450,
+    "videoUrls": [
+      "https://youtu.be/W6wJz0cC4nM"
+    ],
+    "texts": {
+      "en": {
+        "name": "Chip Shot",
+        "advice": [
+          "Use a narrow stance and keep weight slightly on lead foot.",
+          "Minimize wrist action for predictable rollout.",
+          "Strike with a descending blow and stable clubface.",
+          "Pick a precise landing spot before every chip."
+        ],
+        "nextSteps": [
+          "Practice 30 chips to one landing towel at short range.",
+          "Use three clubs and compare rollout distances.",
+          "Run up-and-down challenge from 5 positions.",
+          "Record make percentage inside 2 meters."
+        ]
+      },
+      "sv": {
+        "name": "Chip",
+        "advice": [
+          "Stå smalt och ha lite mer vikt på främre fot.",
+          "Minimera handledsarbete för mer förutsägbar rull.",
+          "Träffa med nedåtgående rörelse och stabilt klubbhuvud.",
+          "Välj en exakt landningspunkt före varje chip."
+        ],
+        "nextSteps": [
+          "Öva 30 chippar mot en handduk på kort avstånd.",
+          "Använd tre klubbor och jämför rullsträckor.",
+          "Kör up-and-down-utmaning från 5 positioner.",
+          "Registrera träffprocent inom 2 meter."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:pitch-shot",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 460,
+    "videoUrls": [
+      "https://youtu.be/oS9qj3jYl8Y"
+    ],
+    "texts": {
+      "en": {
+        "name": "Pitch Shot",
+        "advice": [
+          "Open stance slightly and allow controlled hinge in backswing.",
+          "Accelerate through impact to maintain loft and spin.",
+          "Match swing length to carry distance instead of forcing power.",
+          "Keep chest rotating through the shot for clean contact."
+        ],
+        "nextSteps": [
+          "Build a 30-50-70 meter distance matrix with one wedge.",
+          "Hit 5 balls per distance and note average carry.",
+          "Practice high vs low trajectory with same target.",
+          "Finish with random-distance wedge challenge."
+        ]
+      },
+      "sv": {
+        "name": "Pitch",
+        "advice": [
+          "Öppna stansen lätt och tillåt kontrollerad handleds-sättning.",
+          "Accelerera genom träffen för att behålla loft och spinn.",
+          "Matcha svinglängd till carry i stället för att forcera kraft.",
+          "Låt bröstet rotera genom slaget för ren bollträff."
+        ],
+        "nextSteps": [
+          "Bygg en 30-50-70 meters matris med en wedge.",
+          "Slå 5 bollar per avstånd och notera snitt-carry.",
+          "Träna hög och låg bollbana mot samma mål.",
+          "Avsluta med slumpade wedge-avstånd."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:bunker-shot",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 470,
+    "videoUrls": [
+      "https://youtu.be/4jYlJQkX0vU"
+    ],
+    "texts": {
+      "en": {
+        "name": "Bunker Shot",
+        "advice": [
+          "Open clubface before taking grip and aim body slightly left.",
+          "Enter sand behind the ball with speed through impact.",
+          "Use stable lower body and full follow-through.",
+          "Focus on splash and landing zone"
+        ],
+        "nextSteps": [
+          "not ball-first contact."
+        ]
+      },
+      "sv": {
+        "name": "Bunkerslag",
+        "advice": [
+          "Öppna bladet före grepp och rikta kroppen något vänster.",
+          "Gå in i sanden bakom bollen med fart genom träffen.",
+          "Håll underkroppen stabil och följ igenom fullt.",
+          "Fokusera på sandstänk och landningsyta"
+        ],
+        "nextSteps": [
+          "inte boll-först."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:putting-basics",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 480,
+    "videoUrls": [
+      "https://youtu.be/US-uJNA6C2w"
+    ],
+    "texts": {
+      "en": {
+        "name": "Putting Basics",
+        "advice": [
+          "Set eyes over or just inside the ball with square face alignment.",
+          "Control start line with a stable putter face through impact.",
+          "Use shoulders to rock the stroke and keep wrists quiet.",
+          "Hold finish briefly to improve face control."
+        ],
+        "nextSteps": [
+          "Roll 50 putts through a gate drill at short distance.",
+          "Practice start-line drill from 1.5 and 3 meters.",
+          "Film from behind to check face aim and path.",
+          "End with 20 pressure putts and track makes."
+        ]
+      },
+      "sv": {
+        "name": "Puttning grunder",
+        "advice": [
+          "Placera ögonen över eller strax innanför bollen med square blad.",
+          "Kontrollera startriktning med stabilt blad genom träffen.",
+          "Låt axlarna driva rörelsen och håll handlederna lugna.",
+          "Håll kvar finish kort för bättre kontroll av bladet."
+        ],
+        "nextSteps": [
+          "Rulla 50 puttar genom gate-drill på kort avstånd.",
+          "Öva startriktning från 1"
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:lag-putting",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 490,
+    "videoUrls": [
+      "https://youtu.be/0wYf3fL2R9A"
+    ],
+    "texts": {
+      "en": {
+        "name": "Lag Putting",
+        "advice": [
+          "Focus on distance control to reduce three-putt risk.",
+          "Match stroke length to putt distance with consistent tempo.",
+          "Read slope and choose a high point before the stroke.",
+          "Prioritize finishing inside a safe leave zone."
+        ],
+        "nextSteps": [
+          "Perform ladder putting drill at 6"
+        ]
+      },
+      "sv": {
+        "name": "Långputt",
+        "advice": [
+          "Fokusera på längdkontroll för att minska treputtsrisk.",
+          "Matcha puttrörelsens längd till avstånd med jämnt tempo.",
+          "Läs lutning och välj högpunkt före slag.",
+          "Prioritera att stanna inom en säker lämna-zon."
+        ],
+        "nextSteps": [
+          "Kör stege på 6"
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:draw-fade-control",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 500,
+    "videoUrls": [
+      "https://youtu.be/kT5hQ6x1uB0"
+    ],
+    "texts": {
+      "en": {
+        "name": "Draw and Fade Control",
+        "advice": [
+          "Adjust clubface and swing path intentionally for small curve changes.",
+          "Keep setup changes minimal and controlled between shot shapes.",
+          "Commit to one start line and one curve window per shot.",
+          "Use shape control for strategy"
+        ],
+        "nextSteps": [
+          "not maximum curvature."
+        ]
+      },
+      "sv": {
+        "name": "Draw och fade-kontroll",
+        "advice": [
+          "Justera blad och svingbana medvetet för små kurvförändringar.",
+          "Håll små och kontrollerade setup-ändringar mellan bollbanor.",
+          "Bestäm en startriktning och ett kurvfönster per slag.",
+          "Använd formkontroll för strategi"
+        ],
+        "nextSteps": [
+          "inte maximal skruv."
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:course-management",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 510,
+    "videoUrls": [
+      "https://youtu.be/0U7Wnq6kX1A"
+    ],
+    "texts": {
+      "en": {
+        "name": "Course Management",
+        "advice": [
+          "Choose targets that avoid big misses rather than chasing perfect shots.",
+          "Play to your stock shot and realistic carry numbers.",
+          "Plan approach zones based on your miss pattern.",
+          "Accept conservative decisions to lower scoring variance."
+        ],
+        "nextSteps": [
+          "Review one hole map and pick safe targets for each shot.",
+          "Play 9 holes with a strict no-hero-shot rule.",
+          "Track penalties"
+        ]
+      },
+      "sv": {
+        "name": "Banstrategi",
+        "advice": [
+          "Välj mål som minimerar stora missar i stället för perfekta slag.",
+          "Spela på din standardbollflykt och realistiska carry-avstånd.",
+          "Planera inspelszoner utifrån ditt missmönster.",
+          "Acceptera konservativa beslut för lägre scorerisk."
+        ],
+        "nextSteps": [
+          "Analysera ett hålkort och välj säkra mål för varje slag.",
+          "Spela 9 hål med regel: inga hero-shots.",
+          "Följ upp pliktslag"
+        ]
+      }
+    }
+  },
+  {
+    "id": "golf:pre-shot-routine",
+    "sportId": "golf",
+    "enabled": true,
+    "sortOrder": 520,
+    "videoUrls": [
+      "https://youtu.be/W0D6Tz2q9yY"
+    ],
+    "texts": {
+      "en": {
+        "name": "Pre-Shot Routine",
+        "advice": [
+          "Use a consistent sequence for target selection"
+        ],
+        "nextSteps": [
+          "rehearsal"
+        ]
+      },
+      "sv": {
+        "name": "Förslagsrutin",
+        "advice": [
+          "Använd en konsekvent sekvens för målval"
+        ],
+        "nextSteps": [
+          "provsving och uppställning.",
+          "Begränsa tekniktankar över bollen och lås på en cue.",
+          "Kontrollera andningen för stabilt tempo under press.",
+          "Starta varje slag med samma tidsmönster."
         ]
       }
     }
