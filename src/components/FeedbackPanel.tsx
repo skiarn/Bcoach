@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Skill } from '../utils/skills.ts'
+import { getSportLabel } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 interface FeedbackPanelProps {
   skill?: Skill
@@ -9,17 +11,6 @@ interface FeedbackPanelProps {
   initialFeedback?: string[]
   initialNextSteps?: string[]
 }
-
-const GENERAL_FEEDBACK = [
-  'Hoppar lite sent – börja hoppet tidigare',
-  'Armen inte helt rak vid kontakt – sträck ut mer',
-  'Följ igenom slaget – håll kontakten längre',
-  'Positionera dig bättre framför bollen',
-  'Håll blicken på bollen hela tiden',
-  'Fotarbete behöver förbättras',
-  'Timing av slaget är fel',
-  'Kraften i slaget är för svag',
-]
 
 function CheckList({
   items,
@@ -58,9 +49,21 @@ function FeedbackPanel({
   initialFeedback = [],
   initialNextSteps = [],
 }: FeedbackPanelProps): JSX.Element {
+  const { t, locale } = useI18n()
+  const GENERAL_FEEDBACK = [
+    t('feedback.general.1'),
+    t('feedback.general.2'),
+    t('feedback.general.3'),
+    t('feedback.general.4'),
+    t('feedback.general.5'),
+    t('feedback.general.6'),
+    t('feedback.general.7'),
+    t('feedback.general.8'),
+  ]
+
   const feedbackItems = useMemo(
     () => (skill ? [...skill.advice, ...GENERAL_FEEDBACK] : GENERAL_FEEDBACK),
-    [skill]
+    [skill, GENERAL_FEEDBACK]
   )
   const nextStepItems = useMemo(() => skill?.nextSteps ?? [], [skill])
   const showFeedbackSection = mode === 'all' || mode === 'feedback'
@@ -132,19 +135,19 @@ function FeedbackPanel({
     <div className="feedback-panel">
       {skill && (
         <div className="feedback-skill-badge">
-          🏐 {skill.name} <span className="feedback-skill-type">({skill.type})</span>
+          🏐 {skill.name} <span className="feedback-skill-type">({getSportLabel(skill.sportId, locale)})</span>
         </div>
       )}
 
       {/* Feedback section */}
       {showFeedbackSection && (
         <section className="feedback-section">
-          <h3>📋 Feedback – vad behöver förbättras?</h3>
+          <h3>📋 {t('feedback.title')}</h3>
           <CheckList items={feedbackItems} selected={selectedFeedback} onToggle={toggleFeedback} />
           <textarea
             className="feedback-textarea"
             value={customFeedback}
-            placeholder="Lägg till egna observationer…"
+            placeholder={t('feedback.placeholder')}
             onChange={(e) => {
               setCustomFeedback(e.target.value)
               emitFeedback(selectedFeedback, e.target.value)
@@ -156,12 +159,12 @@ function FeedbackPanel({
       {/* Nästa steg section */}
       {showNextStepsSection && (
         <section className="feedback-section">
-          <h3>🎯 Nästa steg – vad ska övas?</h3>
+          <h3>🎯 {t('feedback.nextStepsTitle')}</h3>
           <CheckList items={nextStepItems} selected={selectedNextSteps} onToggle={toggleNextStep} />
           <textarea
             className="feedback-textarea"
             value={customNextStep}
-            placeholder="Lägg till eget nästa steg…"
+            placeholder={t('feedback.nextStepsPlaceholder')}
             onChange={(e) => {
               setCustomNextStep(e.target.value)
               emitNextSteps(selectedNextSteps, e.target.value)
@@ -172,13 +175,13 @@ function FeedbackPanel({
 
       {!skill && mode === 'all' && (
         <p className="feedback-no-skill-hint">
-          💡 Välj en teknik för att få specifika Nästa steg.
+          💡 {t('feedback.chooseSkillHint')}
         </p>
       )}
 
       {mode === 'nextSteps' && nextStepItems.length === 0 && (
         <p className="feedback-no-skill-hint">
-          Ingen teknik vald, så det finns inga fördefinierade Nästa steg. Lägg gärna till egna.
+          {t('feedback.noSkillInNextSteps')}
         </p>
       )}
     </div>

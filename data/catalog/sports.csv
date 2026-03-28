@@ -1,0 +1,7 @@
+sport_id,enabled,sort_order,aliases
+beachvolley,true,10,beach-volley|beach_volley
+volleyboll,true,20,volleyball|indoor-volleyball|indoor_volleyball
+tennis,true,30,lawn-tennis|racquet-sport-tennis
+paddel,true,40,padel|paddle-tennis
+gym,true,50,gym-workout|strength-training|fitness-gym
+golf,true,60,golfing|driving-range

@@ -1,5 +1,6 @@
 import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
+import { normalizeEmbeddedAnalysisMetadata } from '../utils/analysisMetadata.ts'
 
 const DB_NAME = 'bcoach-video-library'
 const DB_VERSION = 1
@@ -70,8 +71,13 @@ function generateId(prefix: string): string {
 }
 
 export async function upsertVideoRecord(record: VideoLibraryRecord): Promise<void> {
+  const normalizedRecord: VideoLibraryRecord = {
+    ...record,
+    metadata: normalizeEmbeddedAnalysisMetadata(record.metadata),
+  }
+
   await withStore('readwrite', async (store) => {
-    await requestToPromise(store.put(record))
+    await requestToPromise(store.put(normalizedRecord))
   })
 }
 
@@ -124,7 +130,7 @@ export async function listVideoLibraryItems(): Promise<VideoLibraryListItem[]> {
       createdAt: record.createdAt,
       lastModified: record.lastModified,
       source: record.source,
-      metadata: record.metadata,
+      metadata: normalizeEmbeddedAnalysisMetadata(record.metadata),
     }))
     .sort((a, b) => b.createdAt - a.createdAt)
 }
@@ -132,7 +138,14 @@ export async function listVideoLibraryItems(): Promise<VideoLibraryListItem[]> {
 export async function getVideoLibraryRecord(id: string): Promise<VideoLibraryRecord | null> {
   return withStore('readonly', async (store) => {
     const record = await requestToPromise(store.get(id) as IDBRequest<VideoLibraryRecord | undefined>)
-    return record ?? null
+    if (!record) {
+      return null
+    }
+
+    return {
+      ...record,
+      metadata: normalizeEmbeddedAnalysisMetadata(record.metadata),
+    }
   })
 }
 
@@ -144,7 +157,20 @@ export async function deleteVideoLibraryRecord(id: string): Promise<void> {
 
 export async function hydrateRecordMetadata(record: VideoLibraryRecord): Promise<VideoLibraryRecord> {
   if (record.metadata) {
-    return record
+    const normalizedMetadata = normalizeEmbeddedAnalysisMetadata(record.metadata)
+    if (JSON.stringify(normalizedMetadata) !== JSON.stringify(record.metadata)) {
+      const updatedRecord: VideoLibraryRecord = {
+        ...record,
+        metadata: normalizedMetadata,
+      }
+      await upsertVideoRecord(updatedRecord)
+      return updatedRecord
+    }
+
+    return {
+      ...record,
+      metadata: normalizedMetadata,
+    }
   }
 
   try {
@@ -155,7 +181,7 @@ export async function hydrateRecordMetadata(record: VideoLibraryRecord): Promise
 
     const updatedRecord: VideoLibraryRecord = {
       ...record,
-      metadata: extracted.metadata,
+      metadata: normalizeEmbeddedAnalysisMetadata(extracted.metadata),
     }
 
     await upsertVideoRecord(updatedRecord)

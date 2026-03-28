@@ -57,7 +57,7 @@ function App(): JSX.Element {
           <Route path="/analyze" element={<Analyze onBack={() => window.history.back()} />} />
           <Route path="/history" element={<History />} />
           <Route path="/training" element={<Training />} />
-          <Route path="/practice/:skillName/:type" element={<SkillPractice />} />
+          <Route path="/practice/:paramA/:paramB" element={<SkillPractice />} />
         </Routes>
       </div>
     </Router>

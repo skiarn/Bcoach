@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { VideoLibraryListItem } from '../../services/videoLibrary.ts'
+import { useI18n } from '../../i18n/I18nProvider.tsx'
 
 interface HistorySkillGroupsProps {
   isLoading: boolean
@@ -29,6 +30,7 @@ function HistorySkillGroups({
   formatDate,
   formatBytes,
 }: HistorySkillGroupsProps): JSX.Element {
+  const { t } = useI18n()
   const tabs = useMemo<SkillTab[]>(() => {
     return typeOrder.flatMap((typeLabel) => {
       const skillGroups = groupedItems[typeLabel]
@@ -79,12 +81,12 @@ function HistorySkillGroups({
   return (
     <aside className="history-sidebar">
       <div className="history-sidebar-header">
-        <p className="history-sidebar-label">Teknik</p>
-        <h3>{activeTab?.skillName ?? 'Mina videos'}</h3>
-        <p className="history-sidebar-meta">{activeTab ? `${activeTab.typeLabel} · ${activeTab.items.length} videor` : 'Ingen video tillgänglig'}</p>
+        <p className="history-sidebar-label">{t('history.groups.skill')}</p>
+        <h3>{activeTab?.skillName ?? t('history.groups.myVideos')}</h3>
+        <p className="history-sidebar-meta">{activeTab ? t('history.groups.tabMeta', { type: activeTab.typeLabel, count: activeTab.items.length }) : t('history.groups.noneAvailable')}</p>
       </div>
 
-      <div className="history-skill-tabs" role="tablist" aria-label="Välj teknik">
+      <div className="history-skill-tabs" role="tablist" aria-label={t('history.groups.chooseSkill')}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -102,9 +104,9 @@ function HistorySkillGroups({
 
       <div className="history-sidebar-list">
         {isLoading ? (
-          <p>Laddar...</p>
+          <p>{t('history.groups.loading')}</p>
         ) : !activeTab || activeTab.items.length === 0 ? (
-          <p>Inga videor indexerade ännu.</p>
+          <p>{t('history.groups.empty')}</p>
         ) : (
           activeTab.items.map((item) => (
             <article
@@ -113,14 +115,14 @@ function HistorySkillGroups({
             >
               <button type="button" className="history-sidebar-item__main" onClick={() => onOpenItem(item.id)}>
                 <strong>{item.name}</strong>
-                <p className="history-skill-type">{item.source === 'exported' ? 'Exporterad' : 'Importerad'}</p>
+                <p className="history-skill-type">{item.source === 'exported' ? t('history.groups.exported') : t('history.groups.imported')}</p>
                 <p>{formatDate(item.createdAt)}</p>
                 <p>{formatBytes(item.size)}</p>
-                <p>Feedback: {item.metadata?.feedback.length ?? 0}</p>
-                <p>Nästa steg: {item.metadata?.nextSteps.length ?? 0}</p>
+                <p>{t('history.groups.feedbackCount', { count: item.metadata?.feedback.length ?? 0 })}</p>
+                <p>{t('history.groups.nextStepsCount', { count: item.metadata?.nextSteps.length ?? 0 })}</p>
               </button>
               <button type="button" onClick={() => onDelete(item.id)} className="history-action-btn history-action-btn--delete">
-                Ta bort
+                {t('history.groups.delete')}
               </button>
             </article>
           ))
