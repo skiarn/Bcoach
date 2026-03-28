@@ -13,7 +13,9 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null)
 
 function normalizeUiLocale(locale: string): SupportedUiLocale {
-  return locale === 'en' ? 'en' : 'sv'
+  if (locale === 'en') return 'en'
+  if (locale === 'es') return 'es'
+  return 'sv'
 }
 
 function interpolate(template: string, values?: TranslationValues): string {

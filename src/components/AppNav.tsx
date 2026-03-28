@@ -8,7 +8,7 @@ function AppNav(): JSX.Element {
   const handleLanguageChange = (nextLocale: string) => {
     setLocale(nextLocale)
     const params = new URLSearchParams(location.search)
-    params.set('lang', nextLocale === 'en' ? 'en' : 'sv')
+    params.set('lang', nextLocale)
 
     const basePath = import.meta.env.BASE_URL
     const pathname = location.pathname.startsWith(basePath)
@@ -47,6 +47,13 @@ function AppNav(): JSX.Element {
             onClick={() => handleLanguageChange('en')}
           >
             EN
+          </button>
+          <button
+            type="button"
+            className={locale === 'es' ? 'active' : ''}
+            onClick={() => handleLanguageChange('es')}
+          >
+            ES
           </button>
         </div>
       </div>

@@ -5,7 +5,8 @@ export const DEFAULT_LOCALE = "sv" as const
 
 export const SUPPORTED_LOCALES = [
   "sv",
-  "en"
+  "en",
+  "es"
 ] as const
 
 export interface GeneratedSportDefinition {
@@ -42,6 +43,7 @@ export const generatedSports: GeneratedSportDefinition[] = [
     ],
     "labels": {
       "en": "Beach Volleyball",
+      "es": "Vóley Playa",
       "sv": "Beachvolley"
     }
   },
@@ -56,6 +58,7 @@ export const generatedSports: GeneratedSportDefinition[] = [
     ],
     "labels": {
       "en": "Volleyball",
+      "es": "Voleibol",
       "sv": "Volleyboll"
     }
   },
@@ -69,6 +72,7 @@ export const generatedSports: GeneratedSportDefinition[] = [
     ],
     "labels": {
       "en": "Tennis",
+      "es": "Tenis",
       "sv": "Tennis"
     }
   },
@@ -82,6 +86,7 @@ export const generatedSports: GeneratedSportDefinition[] = [
     ],
     "labels": {
       "en": "Padel",
+      "es": "Pádel",
       "sv": "Padel"
     }
   },
@@ -96,6 +101,7 @@ export const generatedSports: GeneratedSportDefinition[] = [
     ],
     "labels": {
       "en": "Gym",
+      "es": "Gimnasio",
       "sv": "Gym"
     }
   },
@@ -109,6 +115,7 @@ export const generatedSports: GeneratedSportDefinition[] = [
     ],
     "labels": {
       "en": "Golf",
+      "es": "Golf",
       "sv": "Golf"
     }
   }
@@ -137,6 +144,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film yourself from front and back and compare.",
           "Practice with partner: exchange finger passes 10 in a row without drop.",
           "Focus on wrist movement next session."
+        ]
+      },
+      "es": {
+        "name": "Pase de dedos",
+        "advice": [
+          "Mantén la muñeca recta y los dedos juntos.",
+          "Golpea el balón con las yemas de los dedos para mejor control.",
+          "Sigue el movimiento del golpe para dar al balón la dirección correcta.",
+          "Practica colocar el balón exactamente donde quieres."
+        ],
+        "nextSteps": [
+          "Practica pases de dedos contra la pared 50 veces al día.",
+          "Fílmate de frente y de atrás y compara.",
+          "Practica con compañero: intercambia pases de dedos 10 en fila sin dejar caer.",
+          "Concéntrate en el movimiento de la muñeca en la próxima sesión."
         ]
       },
       "sv": {
@@ -180,6 +202,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Work on arm angle at contact."
         ]
       },
+      "es": {
+        "name": "Voleo bajo (antebrazos)",
+        "advice": [
+          "Usa todo el brazo para crear potencia.",
+          "Mantén la muñeca relajada para mejor sensación.",
+          "Golpea el balón frente al cuerpo.",
+          "Concéntrate en pasar el balón sobre la red con precisión."
+        ],
+        "nextSteps": [
+          "Practica voleo bajo contra la pared con tempo constante.",
+          "Entrena el trabajo de pies – posiciónate bien antes del golpe.",
+          "Practica con compañero: saque–voleo bajo 20 en fila.",
+          "Trabaja el ángulo del brazo en el contacto."
+        ]
+      },
       "sv": {
         "name": "Bagger",
         "advice": [
@@ -219,6 +256,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Vary power – train both low and high speed.",
           "Film serve from side to check body position.",
           "Practice 20 serves in a row with consistent technique."
+        ]
+      },
+      "es": {
+        "name": "Saque por abajo",
+        "advice": [
+          "Párate con los pies a la anchura de los hombros.",
+          "Golpea el balón con el antebrazo, no con la mano.",
+          "Mantén el balón quieto antes del saque.",
+          "Practica variar la dirección y velocidad del saque."
+        ],
+        "nextSteps": [
+          "Practica la precisión del saque: apunta a zonas específicas.",
+          "Varía la potencia – entrena tanto baja como alta velocidad.",
+          "Fílmate el saque desde el lado para verificar la posición del cuerpo.",
+          "Practica 20 saques en fila con técnica consistente."
         ]
       },
       "sv": {
@@ -262,6 +314,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from side – check arm angle height."
         ]
       },
+      "es": {
+        "name": "Saque por arriba",
+        "advice": [
+          "Lanza el balón hacia arriba y golpéalo cuando cae.",
+          "Usa todo el cuerpo para generar potencia.",
+          "Mantén los ojos en el balón todo el tiempo.",
+          "Practica golpear el balón en el centro para mejor control."
+        ],
+        "nextSteps": [
+          "Practica el lanzamiento por separado – altura y posición consistentes.",
+          "Concéntrate en la rotación de cadera para más potencia.",
+          "Entrena variando la dirección (cruzado/línea).",
+          "Fílmate desde el lado – verifica la altura del codo."
+        ]
+      },
       "sv": {
         "name": "Överarmsserve",
         "advice": [
@@ -301,6 +368,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train jump separately to build explosivity.",
           "Practice spike with net without opposition.",
           "Film from front – check contact height."
+        ]
+      },
+      "es": {
+        "name": "Remate",
+        "advice": [
+          "Salta alto y estira el brazo completamente.",
+          "Contacta el balón frente a la frente.",
+          "Usa la muñeca para dirigir el balón.",
+          "Sigue el movimiento del golpe para máxima potencia."
+        ],
+        "nextSteps": [
+          "Practica la aproximación – aproximación de 3 pasos hasta que salga bien.",
+          "Entrena el salto por separado para construir explosividad.",
+          "Practica el remate con red sin oposición.",
+          "Fílmate de frente – verifica la altura del contacto."
         ]
       },
       "sv": {
@@ -344,6 +426,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film side profile – check how well you hide attack intention."
         ]
       },
+      "es": {
+        "name": "Ataques alternativos",
+        "advice": [
+          "Varía tus ataques para sorprender al rival.",
+          "Practica diferentes tipos de golpes como el toque y el rodado.",
+          "Usa el cuerpo para crear ángulos.",
+          "Comunícate con tu compañero sobre qué ataque vas a hacer."
+        ],
+        "nextSteps": [
+          "Practica toque y rodado 10 veces cada uno por entrenamiento.",
+          "Entrena la toma de decisión tardía en el salto.",
+          "Practica con compañero: el bloqueador elige el lado, el atacante se adapta.",
+          "Fílmate de perfil – verifica qué tan bien ocultas la intención de ataque."
+        ]
+      },
       "sv": {
         "name": "Alternativa anfall",
         "advice": [
@@ -383,6 +480,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train reading opponent's shoulder direction.",
           "Practice stable landing and immediate next position.",
           "Film from front – check hand position at contact."
+        ]
+      },
+      "es": {
+        "name": "Bloqueo",
+        "advice": [
+          "Salta al mismo tiempo que el rival.",
+          "Mantén los brazos rectos y las manos juntas.",
+          "Lee la intención del rival.",
+          "Bloquea el balón recto hacia arriba para ayudar a tu compañero."
+        ],
+        "nextSteps": [
+          "Practica el timing del bloqueo con un compañero que remata.",
+          "Entrena leer la dirección del hombro del rival.",
+          "Practica aterrizar de forma estable e ir inmediatamente a la siguiente posición.",
+          "Fílmate de frente – verifica la posición de las manos en el contacto."
         ]
       },
       "sv": {
@@ -426,6 +538,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from behind – check rotation's full reach."
         ]
       },
+      "es": {
+        "name": "Bloqueo hacia atrás",
+        "advice": [
+          "Gira el cuerpo para alcanzar el balón detrás de ti.",
+          "Usa ambas manos para mejor control.",
+          "Salta alto y estírate.",
+          "Practica el timing para llegar a tiempo."
+        ],
+        "nextSteps": [
+          "Practica la rotación y el estiramiento sin balón.",
+          "Entrena el bloqueo hacia atrás con saque lento del compañero.",
+          "Trabaja en el aterrizaje – equilibrio directo tras el salto.",
+          "Fílmate por detrás – verifica el alcance completo de la rotación."
+        ]
+      },
       "sv": {
         "name": "Blockback",
         "advice": [
@@ -465,6 +592,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train reaction speed with varying serve directions.",
           "Practice \"bump-position\" as base position.",
           "Film from front during match to analyze decisions."
+        ]
+      },
+      "es": {
+        "name": "Recepción del saque",
+        "advice": [
+          "Ponte en posición con las rodillas dobladas.",
+          "Mueve los pies rápido para alcanzar el balón.",
+          "Usa la mano plana para mejor control.",
+          "Pasa el balón alto y preciso a tu compañero."
+        ],
+        "nextSteps": [
+          "Practica la precisión de la recepción – apunta a una zona específica.",
+          "Entrena la velocidad de reacción con saques de distintas direcciones.",
+          "Practica \"posición de voleo bajo\" como posición base.",
+          "Fílmate de frente durante el partido para analizar las decisiones."
         ]
       },
       "sv": {
@@ -508,6 +650,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film serve from side to check jump height."
         ]
       },
+      "es": {
+        "name": "Saque flotante en salto",
+        "advice": [
+          "Salta alto y golpea el balón con las yemas de los dedos.",
+          "Mantén la muñeca recta.",
+          "Crea un movimiento flotante.",
+          "Practica colocar el balón exactamente."
+        ],
+        "nextSteps": [
+          "Practica el movimiento flotante de pie en el suelo primero.",
+          "Entrena la aproximación + salto sin balón.",
+          "Practica la precisión: apunta a campos específicos.",
+          "Fílmate el saque desde el lado para verificar la altura del salto."
+        ]
+      },
       "sv": {
         "name": "Hoppfloat",
         "advice": [
@@ -547,6 +704,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train spin direction: topspin vs. sidespin.",
           "Practice 10 spins in a row to target field.",
           "Film hand at contact – check finger work."
+        ]
+      },
+      "es": {
+        "name": "Saque con efecto",
+        "advice": [
+          "Haz girar el balón con los dedos antes del saque.",
+          "Golpea el balón con potencia para crear rotación.",
+          "Varía el efecto para dificultar la recepción al rival.",
+          "Practica golpear el balón correctamente para el efecto deseado."
+        ],
+        "nextSteps": [
+          "Practica el agarre – sujeta y gira el balón sin sacar.",
+          "Entrena la dirección del efecto: topspin vs. efecto lateral.",
+          "Practica 10 saques con efecto en fila hacia un campo.",
+          "Fílmate la mano en el contacto – verifica el trabajo de dedos."
         ]
       },
       "sv": {
@@ -590,6 +762,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Focus on setting height and precision."
         ]
       },
+      "es": {
+        "name": "Pase de dedos",
+        "advice": [
+          "Mantén la muñeca recta y los dedos juntos.",
+          "Golpea el balón con las yemas de los dedos para mejor control.",
+          "Sigue el movimiento del golpe para dar al balón la dirección correcta.",
+          "Practica colocar el balón exactamente donde quieres."
+        ],
+        "nextSteps": [
+          "Practica pases de dedos contra la pared 50 veces al día.",
+          "Fílmate de frente – verifica la posición de las manos.",
+          "Practica con compañero en pases de dedos en parejas 10 en fila.",
+          "Concéntrate en la altura y precisión del colocado."
+        ]
+      },
       "sv": {
         "name": "Fingerslag",
         "advice": [
@@ -629,6 +816,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train footwork – position yourself right.",
           "Practice serve–reception with partner 20 in a row.",
           "Work on arm angle at contact."
+        ]
+      },
+      "es": {
+        "name": "Voleo bajo (antebrazos)",
+        "advice": [
+          "Usa todo el brazo para crear potencia.",
+          "Mantén la muñeca relajada para mejor sensación.",
+          "Golpea el balón frente al cuerpo.",
+          "Concéntrate en pasar el balón sobre la red con precisión."
+        ],
+        "nextSteps": [
+          "Practica voleo bajo contra la pared con tempo constante.",
+          "Entrena el trabajo de pies – posiciónate bien.",
+          "Practica saque–recepción con compañero 20 en fila.",
+          "Trabaja el ángulo del brazo en el contacto."
         ]
       },
       "sv": {
@@ -672,6 +874,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Practice 20 serves in a row with consistent technique."
         ]
       },
+      "es": {
+        "name": "Saque por abajo",
+        "advice": [
+          "Párate con los pies a la anchura de los hombros.",
+          "Golpea el balón con el antebrazo, no con la mano.",
+          "Mantén el balón quieto antes del saque.",
+          "Practica variar la dirección y velocidad del saque."
+        ],
+        "nextSteps": [
+          "Practica la precisión: apunta a zonas específicas.",
+          "Varía la potencia de sesión a sesión.",
+          "Fílmate el saque desde el lado – verifica la posición.",
+          "Practica 20 saques en fila con técnica consistente."
+        ]
+      },
       "sv": {
         "name": "Underarmsserve",
         "advice": [
@@ -711,6 +928,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Focus on hip rotation.",
           "Train direction variation (cross/line).",
           "Film from side – check arm angle height."
+        ]
+      },
+      "es": {
+        "name": "Saque por arriba",
+        "advice": [
+          "Lanza el balón hacia arriba y golpéalo cuando cae.",
+          "Usa todo el cuerpo para generar potencia.",
+          "Mantén los ojos en el balón todo el tiempo.",
+          "Practica golpear el balón en el centro para mejor control."
+        ],
+        "nextSteps": [
+          "Practica el lanzamiento por separado – altura consistente.",
+          "Concéntrate en la rotación de cadera.",
+          "Entrena la variación de dirección (cruzado/línea).",
+          "Fílmate desde el lado – verifica la altura del codo."
         ]
       },
       "sv": {
@@ -754,6 +986,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from front – check contact height."
         ]
       },
+      "es": {
+        "name": "Remate",
+        "advice": [
+          "Salta alto y estira el brazo completamente.",
+          "Contacta el balón frente a la frente.",
+          "Usa la muñeca para dirigir el balón.",
+          "Sigue el movimiento del golpe para máxima potencia."
+        ],
+        "nextSteps": [
+          "Practica la aproximación de 3 pasos hasta que salga bien.",
+          "Entrena el salto para la explosividad.",
+          "Practica el remate con red sin oposición.",
+          "Fílmate de frente – verifica la altura del contacto."
+        ]
+      },
       "sv": {
         "name": "Spike",
         "advice": [
@@ -793,6 +1040,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train late decision-making in jump.",
           "Practice with partner: blocker chooses, attacker adapts.",
           "Film side profile to analyze intention-hiding."
+        ]
+      },
+      "es": {
+        "name": "Ataques alternativos",
+        "advice": [
+          "Varía tus ataques para sorprender al rival.",
+          "Practica diferentes tipos de golpes como el toque y el rodado.",
+          "Usa el cuerpo para crear ángulos.",
+          "Comunícate con tu compañero sobre qué ataque vas a hacer."
+        ],
+        "nextSteps": [
+          "Practica toque y rodado 10 veces cada uno.",
+          "Entrena la toma de decisión tardía en el salto.",
+          "Practica con compañero: el bloqueador elige, el atacante se adapta.",
+          "Fílmate de perfil para analizar la ocultación de intención."
         ]
       },
       "sv": {
@@ -836,6 +1098,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from front – hand position at contact."
         ]
       },
+      "es": {
+        "name": "Bloqueo",
+        "advice": [
+          "Salta al mismo tiempo que el rival.",
+          "Mantén los brazos rectos y las manos juntas.",
+          "Lee la intención del rival.",
+          "Bloquea el balón recto hacia arriba para ayudar a tu compañero."
+        ],
+        "nextSteps": [
+          "Practica el timing del bloqueo con un compañero que ataca.",
+          "Entrena leer la dirección del hombro.",
+          "Practica aterrizaje estable y movimiento directo.",
+          "Fílmate de frente – posición de manos en el contacto."
+        ]
+      },
       "sv": {
         "name": "Block",
         "advice": [
@@ -875,6 +1152,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train reaction speed with varying serves.",
           "Practice precision: aim at setter position.",
           "Film match to analyze position decisions."
+        ]
+      },
+      "es": {
+        "name": "Recepción del saque",
+        "advice": [
+          "Ponte en posición con las rodillas dobladas.",
+          "Mueve los pies rápido para alcanzar el balón.",
+          "Usa la mano plana para mejor control.",
+          "Pasa el balón alto y preciso a tu compañero."
+        ],
+        "nextSteps": [
+          "Practica recepción–pase–colocada en grupo de 3.",
+          "Entrena la velocidad de reacción con saques variados.",
+          "Practica la precisión: apunta a la posición del colocador.",
+          "Fílmate en partido para analizar las decisiones de posición."
         ]
       },
       "sv": {
@@ -918,6 +1210,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from side – check jump height."
         ]
       },
+      "es": {
+        "name": "Saque flotante en salto",
+        "advice": [
+          "Salta alto y golpea el balón con las yemas de los dedos.",
+          "Mantén la muñeca recta.",
+          "Crea un movimiento flotante.",
+          "Practica colocar el balón exactamente."
+        ],
+        "nextSteps": [
+          "Practica el movimiento flotante de pie en el suelo.",
+          "Entrena la aproximación + salto sin balón.",
+          "Practica la precisión a campos específicos.",
+          "Fílmate desde el lado – verifica la altura del salto."
+        ]
+      },
       "sv": {
         "name": "Hoppfloat",
         "advice": [
@@ -957,6 +1264,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Train topspin vs. sidespin.",
           "Practice 10 spins in a row to target field.",
           "Film hand at contact – check finger work."
+        ]
+      },
+      "es": {
+        "name": "Saque con efecto",
+        "advice": [
+          "Haz girar el balón con los dedos antes del saque.",
+          "Golpea el balón con potencia para crear rotación.",
+          "Varía el efecto para dificultar la recepción al rival.",
+          "Practica golpear el balón correctamente para el efecto deseado."
+        ],
+        "nextSteps": [
+          "Practica el agarre y la rotación del balón por separado.",
+          "Entrena topspin vs. efecto lateral.",
+          "Practica 10 saques con efecto en fila hacia un campo.",
+          "Fílmate la mano en el contacto – verifica el trabajo de dedos."
         ]
       },
       "sv": {
@@ -1000,6 +1322,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Finish the session with 15 forehands in a row at controlled tempo."
         ]
       },
+      "es": {
+        "name": "Golpe de derecha",
+        "advice": [
+          "Prepárate pronto con un split step claro antes del golpe del rival.",
+          "Encuentra el balón frente al cuerpo para mejor control y potencia.",
+          "Rota cadera y hombros juntos en el golpe para una potencia estable.",
+          "Termina alto y equilibrado para una trayectoria más consistente."
+        ],
+        "nextSteps": [
+          "Realiza 3 x 20 derechas cruzadas enfocándote en la preparación temprana.",
+          "Grábate desde el lado y verifica que el punto de contacto está frente a la cadera.",
+          "Alterna 10 golpes cruzados y 10 golpes a lo largo de la línea.",
+          "Termina la sesión con 15 derechas en fila a tempo controlado."
+        ]
+      },
       "sv": {
         "name": "Forehand",
         "advice": [
@@ -1039,6 +1376,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Practice backhand on the move with 5 sets of lateral footwork drills.",
           "Record from behind to review shoulder rotation and balance.",
           "Complete 12 backhands in a row with focus on depth."
+        ]
+      },
+      "es": {
+        "name": "Golpe de revés",
+        "advice": [
+          "Carga pronto con la raqueta atrás y una línea de hombros estable.",
+          "Mantén la cabeza quieta durante todo el contacto.",
+          "Usa las piernas y el cuerpo para generar potencia en vez de solo el brazo.",
+          "Dirige el seguimiento claramente hacia tu objetivo."
+        ],
+        "nextSteps": [
+          "Golpea 30 reveses contra la pared con tempo constante y buen margen sobre la red.",
+          "Practica revés en movimiento con 5 series de ejercicios de desplazamiento lateral.",
+          "Grábate por detrás para revisar la rotación de hombros y el equilibrio.",
+          "Completa 12 reveses en fila con foco en la profundidad."
         ]
       },
       "sv": {
@@ -1082,6 +1434,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Record from the side to analyze contact point and timing."
         ]
       },
+      "es": {
+        "name": "Saque",
+        "advice": [
+          "Mantén el lanzamiento consistente en altura y posición en cada saque.",
+          "Crea una flexión de rodillas clara y empuja hacia arriba con las piernas.",
+          "Contacta el balón en el punto más alto posible con el brazo relajado.",
+          "Aterriza con control y prepárate para el siguiente golpe inmediatamente."
+        ],
+        "nextSteps": [
+          "Practica 20 lanzamientos sin golpear hasta que caigan en la misma ventana.",
+          "Saca 3 x 10 primeros saques hacia una zona objetivo elegida.",
+          "Alterna sets de precisión y sets de velocidad.",
+          "Grábate desde el lado para analizar el punto de contacto y el timing."
+        ]
+      },
       "sv": {
         "name": "Serve",
         "advice": [
@@ -1121,6 +1488,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Do 4 x 12 backhand volleys aiming for the same contact point each rep.",
           "Practice baseline-to-net transition with a split step before the volley.",
           "Record from the front and review racket-face angle at contact."
+        ]
+      },
+      "es": {
+        "name": "Volea en la red",
+        "advice": [
+          "Un backswing corto y una cara de raqueta firme crean una volea estable.",
+          "Usa pequeños pasos de ajuste para que el contacto ocurra frente al cuerpo.",
+          "Mantén el centro de gravedad adelante con las rodillas ligeramente dobladas.",
+          "Coloca las voleas en el espacio abierto en vez de forzar la máxima potencia."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 12 voleas de derecha cerca de la red con foco en el control.",
+          "Realiza 4 x 12 voleas de revés apuntando al mismo punto de contacto cada rep.",
+          "Practica la transición de la línea de fondo a la red con split step antes de la volea.",
+          "Grábate de frente y revisa el ángulo de la raqueta en el contacto."
         ]
       },
       "sv": {
@@ -1164,6 +1546,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Finish with 15 forehands in a row at controlled tempo."
         ]
       },
+      "es": {
+        "name": "Golpe de derecha",
+        "advice": [
+          "Prepara el golpe pronto y mantén un swing compacto para mejor control en el juego de cristal.",
+          "Encuentra el balón frente al cuerpo y mantén la cabeza quieta durante el contacto.",
+          "Usa las piernas y el cuerpo para crear velocidad estable en vez de forzar con el brazo.",
+          "Vuelve rápido a la posición de espera tras cada golpe."
+        ],
+        "nextSteps": [
+          "Realiza 3 x 20 derechas cruzadas con foco en el margen sobre la red.",
+          "Alterna 10 derechas profundas y 10 balones cortos controlados.",
+          "Grábate desde el lado y revisa el punto de contacto y equilibrio.",
+          "Termina con 15 derechas en fila a tempo controlado."
+        ]
+      },
       "sv": {
         "name": "Forehand",
         "advice": [
@@ -1203,6 +1600,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Practice 10 backhands after wall rebound on each side.",
           "Record from behind and check shoulder rotation and spacing.",
           "Complete 12 backhands in a row before increasing speed."
+        ]
+      },
+      "es": {
+        "name": "Golpe de revés",
+        "advice": [
+          "Coloca la raqueta pronto y mantén el hombro no dominante apuntando al balón.",
+          "Mantente bajo con las rodillas dobladas para manejar los botes bajos del pádel.",
+          "Impulsa a través del balón con un seguimiento suave hacia el objetivo.",
+          "Vuelve a la posición central inmediatamente tras el contacto."
+        ],
+        "nextSteps": [
+          "Realiza 3 x 15 reveses cruzados con altura y profundidad constantes.",
+          "Practica 10 reveses tras rebote de pared en cada lado.",
+          "Grábate por detrás y revisa la rotación de hombros y la distancia al balón.",
+          "Completa 12 reveses en fila antes de aumentar la velocidad."
         ]
       },
       "sv": {
@@ -1246,6 +1658,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Play point-start drills focused on serve plus first volley."
         ]
       },
+      "es": {
+        "name": "Saque",
+        "advice": [
+          "Usa un lanzamiento bajo consistente y contacta por debajo de la cintura según las reglas del pádel.",
+          "Prioriza el efecto y la colocación antes de la máxima potencia.",
+          "Mantén el cuerpo en equilibrio y da un paso hacia la pista tras el contacto.",
+          "Prepárate rápido para la primera volea tras el saque."
+        ],
+        "nextSteps": [
+          "Practica 30 saques hacia la misma zona a ritmo controlado.",
+          "Alterna saques cruzados y saques al cuerpo en series de 10.",
+          "Grábate desde el lado y verifica la altura del lanzamiento y el timing del contacto.",
+          "Juega ejercicios de inicio de punto enfocados en saque más primera volea."
+        ]
+      },
       "sv": {
         "name": "Serve",
         "advice": [
@@ -1285,6 +1712,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from the side to check bar path and back angle.",
           "Add a pause squat set to improve bottom position.",
           "Progress weight only if technique stays stable."
+        ]
+      },
+      "es": {
+        "name": "Sentadilla",
+        "advice": [
+          "Activa el core antes de cada repetición y mantén la columna neutral.",
+          "Mantén las rodillas alineadas con los dedos de los pies y presión en toda la planta del pie.",
+          "Baja con control y mantén el pecho levantado.",
+          "Sube con potencia manteniendo el equilibrio."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 6 reps con carga moderada y profundidad consistente.",
+          "Fílmate de lado para verificar la trayectoria de la barra y el ángulo de la espalda.",
+          "Añade un set de sentadilla con pausa para mejorar la posición baja.",
+          "Aumenta el peso solo si la técnica se mantiene estable."
         ]
       },
       "sv": {
@@ -1328,6 +1770,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Increase load gradually while maintaining bar speed."
         ]
       },
+      "es": {
+        "name": "Peso muerto",
+        "advice": [
+          "Coloca la barra cerca de las espinillas y mantén los dorsales tensos antes de levantar.",
+          "Empuja el suelo hacia abajo y mantén la barra cerca del cuerpo.",
+          "Extiende completamente las caderas sin hiperextender la espalda.",
+          "Reestablece la posición entre repeticiones para mantener la consistencia."
+        ],
+        "nextSteps": [
+          "Realiza 5 x 3 reps enfocándote en una configuración limpia cada vez.",
+          "Grábate desde 45 grados para revisar la sincronía de cadera y hombros.",
+          "Añade deadlifts de tempo ligero para el control de posición.",
+          "Aumenta la carga gradualmente manteniendo la velocidad de la barra."
+        ]
+      },
       "sv": {
         "name": "Marklyft",
         "advice": [
@@ -1367,6 +1824,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Film from front and side to check bar path symmetry.",
           "Add a paused bench set to improve chest control.",
           "Increase load in small steps only after clean sets."
+        ]
+      },
+      "es": {
+        "name": "Press de banca",
+        "advice": [
+          "Coloca la parte superior de la espalda firmemente en el banco y mantén los pies en el suelo.",
+          "Baja la barra con control hasta la mitad del pecho manteniendo las muñecas alineadas.",
+          "Empuja hacia arriba con fuerza uniforma desde ambos brazos y trayectoria estable de codos.",
+          "Mantén la tensión en todo el cuerpo durante cada repetición."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 5 reps a tempo controlado.",
+          "Fílmate de frente y de lado para verificar la simetría de la trayectoria de la barra.",
+          "Añade un set de press de banca con pausa para mejorar el control del pecho.",
+          "Aumenta la carga en pequeños pasos solo tras sets limpios."
         ]
       },
       "sv": {
@@ -1410,6 +1882,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Add small load increases only when reps stay strict."
         ]
       },
+      "es": {
+        "name": "Press sobre la cabeza",
+        "advice": [
+          "Aprieta glúteos y core para evitar hiperextender la zona lumbar.",
+          "Comienza con la barra cerca del pecho superior con las muñecas alineadas.",
+          "Prensa en trayectoria recta y mueve la cabeza al pasar en el bloqueo.",
+          "Baja con control a la misma posición inicial."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 6 reps con forma estricta.",
+          "Practica 2 sets más ligeros de vuelta para la técnica.",
+          "Grábate de lado y verifica el abultamiento de costillas y la trayectoria de la barra.",
+          "Añade pequeños incrementos de carga solo cuando las repeticiones sean estrictas."
+        ]
+      },
       "sv": {
         "name": "Militärpress",
         "advice": [
@@ -1449,6 +1936,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Use assisted pull-ups if you cannot keep full range.",
           "Add isometric holds at the top for 5-10 seconds.",
           "Track total weekly quality reps and progress gradually."
+        ]
+      },
+      "es": {
+        "name": "Dominadas",
+        "advice": [
+          "Comienza desde una suspensión completa con los hombros activos.",
+          "Jala los codos hacia abajo hacia las costillas para activar la espalda.",
+          "Mantén el cuerpo tenso y evita el balanceo excesivo.",
+          "Baja con control hasta la extensión completa en cada rep."
+        ],
+        "nextSteps": [
+          "Completa 5 series cerca del fallo técnico con forma perfecta.",
+          "Usa dominadas asistidas si no puedes mantener el rango completo.",
+          "Añade retenciones isométricas en la parte superior de 5-10 segundos.",
+          "Registra el total de repeticiones semanales de calidad y progresa gradualmente."
         ]
       },
       "sv": {
@@ -1492,6 +1994,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Increase load only if no momentum is used."
         ]
       },
+      "es": {
+        "name": "Remo con barra",
+        "advice": [
+          "Inclínate en las caderas y mantén el torso estable durante el set.",
+          "Jala la barra hacia las costillas inferiores manteniendo los codos cercanos.",
+          "Evita tirones con la zona lumbar para mover el peso.",
+          "Controla la fase excéntrica para mejor activación de la espalda."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 8 reps con tempo estricto.",
+          "Fílmate de lado y monitorea la consistencia del ángulo del torso.",
+          "Añade un set más ligero con pausa de 2 segundos en la parte superior.",
+          "Aumenta la carga solo si no se usa impulso."
+        ]
+      },
       "sv": {
         "name": "Skivstångsrodd",
         "advice": [
@@ -1531,6 +2048,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Use a grip width that keeps shoulders comfortable.",
           "Pause 1 second at the bottom of each rep.",
           "Progress resistance when all reps are clean."
+        ]
+      },
+      "es": {
+        "name": "Jalón al pecho (máquina)",
+        "advice": [
+          "Coloca los muslos firmemente bajo la almohadilla y mantén una postura erguida.",
+          "Jala la barra hasta el pecho superior impulsando los codos hacia abajo y atrás.",
+          "Evita inclinar demasiado; mantén el movimiento controlado.",
+          "Regresa lentamente al estiramiento completo en la parte superior."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 10 reps con ritmo suave.",
+          "Usa un ancho de agarre que mantenga los hombros cómodos.",
+          "Pausa 1 segundo en la parte inferior de cada rep.",
+          "Progresa la resistencia cuando todas las reps sean limpias."
         ]
       },
       "sv": {
@@ -1574,6 +2106,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Increase load when depth and alignment are consistent."
         ]
       },
+      "es": {
+        "name": "Prensa de piernas (máquina)",
+        "advice": [
+          "Posiciona los pies a la anchura de los hombros y mantén las rodillas alineadas con los dedos.",
+          "Baja la plataforma con control hasta una profundidad cómoda.",
+          "Empuja a través del centro del pie sin bloquear las rodillas agresivamente.",
+          "Mantén las caderas y la zona lumbar estables contra el asiento."
+        ],
+        "nextSteps": [
+          "Realiza 4 x 12 reps a resistencia moderada.",
+          "Ajusta la posición de los pies para encontrar la presión equilibrada.",
+          "Añade un set excéntrico más lento para el control.",
+          "Aumenta la carga cuando la profundidad y la alineación sean consistentes."
+        ]
+      },
       "sv": {
         "name": "Benpress (Maskin)",
         "advice": [
@@ -1613,6 +2160,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Use 2-second lowering on each repetition.",
           "Monitor left-right balance during pressing.",
           "Add resistance only after all reps stay controlled."
+        ]
+      },
+      "es": {
+        "name": "Press de pecho (máquina)",
+        "advice": [
+          "Ajusta la altura del asiento para que las mancuernas estén alineadas con la mitad del pecho.",
+          "Mantén los hombros hacia abajo y atrás durante todo el movimiento.",
+          "Prensa suavemente sin rebotar al final del recorrido.",
+          "Regresa con control y mantén la tensión."
+        ],
+        "nextSteps": [
+          "Realiza 3 x 12 reps con rango completo.",
+          "Usa 2 segundos de bajada en cada repetición.",
+          "Monitorea el equilibrio izquierda-derecha durante el press.",
+          "Añade resistencia solo después de que todas las reps estén controladas."
         ]
       },
       "sv": {
@@ -1656,6 +2218,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Progress weight gradually while preserving form."
         ]
       },
+      "es": {
+        "name": "Remo sentado (máquina)",
+        "advice": [
+          "Siéntate erguido con la columna neutral y el pecho abierto.",
+          "Inicia jalando los omóplatos hacia atrás antes de doblar los codos.",
+          "Jala las asas hacia las costillas inferiores sin encoger los hombros.",
+          "Controla el regreso y mantén la postura estable."
+        ],
+        "nextSteps": [
+          "Completa 4 x 10 reps con cadencia constante.",
+          "Haz una breve pausa en la posición contraída en cada rep.",
+          "Fílmate de lado para verificar que el torso permanece erguido.",
+          "Progresa el peso gradualmente preservando la forma."
+        ]
+      },
       "sv": {
         "name": "Sittande rodd (Maskin)",
         "advice": [
@@ -1695,6 +2272,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Do 6 x 1 minute hard efforts with 1 minute easy recovery.",
           "Record cadence and heart rate for pacing feedback.",
           "Cool down 5-8 minutes and note perceived effort."
+        ]
+      },
+      "es": {
+        "name": "Carrera en cinta",
+        "advice": [
+          "Mantén la postura erguida con ligera inclinación hacia adelante desde los tobillos.",
+          "Aterriza bajo el centro de masa con pasos rápidos y ligeros.",
+          "Mantén los hombros relajados y un balanceo de brazos consistente.",
+          "Controla los cambios de ritmo gradualmente."
+        ],
+        "nextSteps": [
+          "Calienta 8 minutos a ritmo suave antes de los intervalos.",
+          "Realiza 6 x 1 minuto de esfuerzo intenso con 1 minuto de recuperación suave.",
+          "Registra la cadencia y la frecuencia cardíaca para retroalimentación del ritmo.",
+          "Enfría 5-8 minutos y anota el esfuerzo percibido."
         ]
       },
       "sv": {
@@ -1738,6 +2330,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Finish with easy spin and short mobility work."
         ]
       },
+      "es": {
+        "name": "Bicicleta estática",
+        "advice": [
+          "Ajusta la altura del sillín para que las rodillas permanezcan ligeramente dobladas en el punto inferior.",
+          "Mantén la cadencia suave y evita pedalear con engranajes pesados.",
+          "Mantén la columna neutral y un agarre relajado en el manillar.",
+          "Controla el ritmo de respiración para que coincida con las zonas de esfuerzo."
+        ],
+        "nextSteps": [
+          "Pedalea 30 minutos con 5 bloques de intensidad progresiva.",
+          "Incluye 8 x 30 segundos de esfuerzo de alta cadencia.",
+          "Registra la cadencia promedio y la resistencia en cada sesión.",
+          "Termina con pedaleo suave y trabajo de movilidad corto."
+        ]
+      },
       "sv": {
         "name": "Motionscykel",
         "advice": [
@@ -1773,6 +2380,18 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
         ],
         "nextSteps": [
           "hips"
+        ]
+      },
+      "es": {
+        "name": "Agarre y posición inicial",
+        "advice": [
+          "Construye un agarre neutral y coloca las manos consistentemente para cada palo.",
+          "Establece la postura con ligera inclinación de cadera y presión equilibrada en ambos pies.",
+          "Alinea pies"
+        ],
+        "nextSteps": [
+          "caderas y hombros paralelos a la línea objetivo.",
+          "Mantén la posición inicial repetible para que tu swing comience desde el mismo lugar."
         ]
       },
       "sv": {
@@ -1813,6 +2432,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "End with 10 fairway-finder swings at 80 percent speed."
         ]
       },
+      "es": {
+        "name": "Swing con driver",
+        "advice": [
+          "Usa una postura más amplia y el tee suficientemente alto para un golpe ascendente.",
+          "Crea amplitud en el backswing y mantén el tempo en la transición.",
+          "Desplaza el peso hacia el lado delantero antes del impacto para un lanzamiento consistente.",
+          "Termina equilibrado con el pecho mirando al objetivo."
+        ],
+        "nextSteps": [
+          "Pega 3 x 10 drives enfocándote en el contacto en el centro de la cara.",
+          "Registra la dirección del lanzamiento y ajusta primero la alineación.",
+          "Grábate de frente para verificar el desplazamiento del peso.",
+          "Termina con 10 swings de búsqueda de fairway al 80 por ciento de velocidad."
+        ]
+      },
       "sv": {
         "name": "Driversving",
         "advice": [
@@ -1849,6 +2483,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "then turf.",
           "Control low point with steady head position and lead-side pressure.",
           "Maintain rhythm and avoid forcing extra speed."
+        ]
+      },
+      "es": {
+        "name": "Swing completo con hierro",
+        "advice": [
+          "Coloca el balón ligeramente adelante del centro con postura estable.",
+          "Comprime el balón golpeando primero el balón y luego el terreno.",
+          "Controla el punto más bajo con posición estable de la cabeza y presión en el lado delantero.",
+          "Mantén el ritmo y evita forzar velocidad extra."
+        ],
+        "nextSteps": [
+          "Pega 4 x 8 golpes con un hierro 7 hacia un objetivo.",
+          "Usa cinta de impacto para verificar la ubicación del golpe en la cara.",
+          "Practica 10 swings de tres cuartos para el control del contacto.",
+          "Registra los rangos de distancia de vuelo para cada hierro."
         ]
       },
       "sv": {
@@ -1889,6 +2538,18 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "not maximum distance."
         ]
       },
+      "es": {
+        "name": "Madera de calle y híbrido",
+        "advice": [
+          "Mantén la posición del balón ligeramente adelante y barre a través del impacto.",
+          "Usa un tempo suave para mejorar el contacto centrado desde el terreno.",
+          "Permanece erguido a través del pecho para evitar un ángulo de ataque pronunciado.",
+          "Elige el palo en función de la ventana de distancia"
+        ],
+        "nextSteps": [
+          "no de la distancia máxima."
+        ]
+      },
       "sv": {
         "name": "Fairwaywood och hybrid",
         "advice": [
@@ -1925,6 +2586,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Use three clubs and compare rollout distances.",
           "Run up-and-down challenge from 5 positions.",
           "Record make percentage inside 2 meters."
+        ]
+      },
+      "es": {
+        "name": "Chip",
+        "advice": [
+          "Usa una postura estrecha y mantén el peso ligeramente en el pie delantero.",
+          "Minimiza el movimiento de muñeca para un rodado predecible.",
+          "Golpea con un golpe descendente y cara de palo estable.",
+          "Elige un punto de aterrizaje preciso antes de cada chip."
+        ],
+        "nextSteps": [
+          "Practica 30 chips hacia una toalla de aterrizaje a corta distancia.",
+          "Usa tres palos y compara las distancias de rodado.",
+          "Realiza un desafío de arriba y abajo desde 5 posiciones.",
+          "Registra el porcentaje de éxito dentro de 2 metros."
         ]
       },
       "sv": {
@@ -1968,6 +2644,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Finish with random-distance wedge challenge."
         ]
       },
+      "es": {
+        "name": "Pitch",
+        "advice": [
+          "Abre ligeramente la postura y permite una bisagra controlada en el backswing.",
+          "Acelera a través del impacto para mantener el loft y el spin.",
+          "Ajusta la longitud del swing a la distancia de vuelo en vez de forzar potencia.",
+          "Mantén el pecho rotando a través del golpe para un contacto limpio."
+        ],
+        "nextSteps": [
+          "Construye una matriz de distancia de 30-50-70 metros con un wedge.",
+          "Pega 5 bolas por distancia y anota el vuelo promedio.",
+          "Practica trayectoria alta vs. baja con el mismo objetivo.",
+          "Termina con un desafío de wedge a distancias aleatorias."
+        ]
+      },
       "sv": {
         "name": "Pitch",
         "advice": [
@@ -2004,6 +2695,18 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
         ],
         "nextSteps": [
           "not ball-first contact."
+        ]
+      },
+      "es": {
+        "name": "Golpe desde el bunker",
+        "advice": [
+          "Abre la cara del palo antes de tomar el agarre y apunta el cuerpo ligeramente a la izquierda.",
+          "Entra en la arena detrás del balón con velocidad a través del impacto.",
+          "Usa la parte inferior del cuerpo estable y un seguimiento completo.",
+          "Concéntrate en el splash y la zona de aterrizaje"
+        ],
+        "nextSteps": [
+          "no en el contacto primero con el balón."
         ]
       },
       "sv": {
@@ -2044,6 +2747,21 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "End with 20 pressure putts and track makes."
         ]
       },
+      "es": {
+        "name": "Fundamentos del putt",
+        "advice": [
+          "Coloca los ojos sobre la bola o justo dentro con la cara del palo cuadrada.",
+          "Controla la línea de salida con una cara de palo estable a través del impacto.",
+          "Usa los hombros para mecer el golpe y mantén las muñecas quietas.",
+          "Sostén el final brevemente para mejorar el control de la cara."
+        ],
+        "nextSteps": [
+          "Rueda 50 putts a través de un ejercicio de puerta a corta distancia.",
+          "Practica el ejercicio de línea de salida desde 1.5 y 3 metros.",
+          "Fílmate por detrás para verificar la apuntación de la cara y la trayectoria.",
+          "Termina con 20 putts de presión y registra los aciertos."
+        ]
+      },
       "sv": {
         "name": "Puttning grunder",
         "advice": [
@@ -2080,6 +2798,18 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Perform ladder putting drill at 6"
         ]
       },
+      "es": {
+        "name": "Putt de distancia",
+        "advice": [
+          "Concéntrate en el control de distancia para reducir el riesgo de tres putts.",
+          "Ajusta la longitud del golpe a la distancia del putt con tempo consistente.",
+          "Lee la pendiente y elige el punto más alto antes del golpe.",
+          "Prioriza terminar dentro de una zona de deje segura."
+        ],
+        "nextSteps": [
+          "Realiza el ejercicio de putt escalonado a 6"
+        ]
+      },
       "sv": {
         "name": "Långputt",
         "advice": [
@@ -2113,6 +2843,18 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
         ],
         "nextSteps": [
           "not maximum curvature."
+        ]
+      },
+      "es": {
+        "name": "Control de draw y fade",
+        "advice": [
+          "Ajusta la cara del palo y la trayectoria del swing intencionalmente para pequeños cambios de curva.",
+          "Mantén los cambios de posición mínimos y controlados entre formas de golpe.",
+          "Comprométete con una línea de salida y una ventana de curva por golpe.",
+          "Usa el control de forma para la estrategia"
+        ],
+        "nextSteps": [
+          "no para la curvatura máxima."
         ]
       },
       "sv": {
@@ -2152,6 +2894,20 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
           "Track penalties"
         ]
       },
+      "es": {
+        "name": "Gestión del campo",
+        "advice": [
+          "Elige objetivos que eviten grandes errores en vez de buscar golpes perfectos.",
+          "Juega tu golpe estándar y distancias de vuelo realistas.",
+          "Planifica las zonas de aproximación basándote en tu patrón de error.",
+          "Acepta decisiones conservadoras para reducir la varianza en el marcador."
+        ],
+        "nextSteps": [
+          "Revisa el mapa de un hoyo y elige objetivos seguros para cada golpe.",
+          "Juega 9 hoyos con una regla estricta de no intentar golpes heroicos.",
+          "Registra penalizaciones"
+        ]
+      },
       "sv": {
         "name": "Banstrategi",
         "advice": [
@@ -2184,6 +2940,18 @@ export const generatedSkills: GeneratedSkillDefinition[] = [
         ],
         "nextSteps": [
           "rehearsal"
+        ]
+      },
+      "es": {
+        "name": "Rutina pre-golpe",
+        "advice": [
+          "Usa una secuencia consistente para la selección de objetivo"
+        ],
+        "nextSteps": [
+          "el ensayo y la posición inicial.",
+          "Limita los pensamientos técnicos sobre la bola y comprométete con una señal.",
+          "Controla la respiración para estabilizar el tempo bajo presión.",
+          "Comienza cada golpe con el mismo patrón de timing."
         ]
       },
       "sv": {
