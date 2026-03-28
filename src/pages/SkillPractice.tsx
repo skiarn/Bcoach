@@ -1,10 +1,13 @@
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { findSkill, findSkillById } from '../utils/skills.ts'
 import UploadButton from '../components/UploadButton.tsx'
+import AppNav from '../components/AppNav.tsx'
 import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 import { getSportLabel, normalizeSportId } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 function SkillPractice(): JSX.Element {
+  const { t, locale } = useI18n()
   const { paramA, paramB } = useParams<{ paramA: string; paramB: string }>()
   const navigate = useNavigate()
 
@@ -12,11 +15,11 @@ function SkillPractice(): JSX.Element {
   const secondSegment = decodeURIComponent(paramB || '')
   const maybeSportId = normalizeSportId(firstSegment)
   const skill = maybeSportId
-    ? findSkillById(secondSegment)
-    : findSkill(firstSegment, secondSegment)
+    ? findSkillById(secondSegment, locale)
+    : findSkill(firstSegment, secondSegment, locale)
 
   if (!skill) {
-    return <div>Skill not found</div>
+    return <div>{t('practice.notFound')}</div>
   }
 
   const handleVideoSelect = (
@@ -32,30 +35,27 @@ function SkillPractice(): JSX.Element {
 
   return (
     <div className="skill-practice">
+      <AppNav />
       <header>
-        <h1>🏐 Öva {skill.name} ({getSportLabel(skill.sportId)})</h1>
-        <nav className="nav-links">
-          <Link to="/training">Tillbaka till träning</Link>
-          <Link to="/history">Mina videos</Link>
-        </nav>
+        <h1>🏐 {t('practice.title', { skill: skill.name, sport: getSportLabel(skill.sportId, locale) })}</h1>
       </header>
       <main>
-        <h2>Instruktionsvideor</h2>
+        <h2>{t('practice.instructionVideos')}</h2>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
           {skill.videoUrls.map((url, index) => (
             <a key={index} href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#007bff' }}>
-              Video {index + 1}
+              {t('practice.videoN', { index: index + 1 })}
             </a>
           ))}
         </div>
-        <h2>Råd för att göra ett rent {skill.name.toLowerCase()}</h2>
+        <h2>{t('practice.adviceTitle', { skill: skill.name.toLowerCase() })}</h2>
         <ul>
           {skill.advice.map((tip, index) => (
             <li key={index}>{tip}</li>
           ))}
         </ul>
-        <h2>Öva nu</h2>
-        <p>Spela in eller ladda upp en video av ditt försök, så får du feedback.</p>
+        <h2>{t('practice.startNow')}</h2>
+        <p>{t('practice.startNowBody')}</p>
         <UploadButton onVideoSelect={handleVideoSelect} />
       </main>
     </div>

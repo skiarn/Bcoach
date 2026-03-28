@@ -34,9 +34,7 @@ function toSport(entry: (typeof generatedSports)[number], locale: string): Sport
   }
 }
 
-const ACTIVE_LOCALE = getCurrentLocale()
-
-export const sports: Sport[] = generatedSports.map((entry) => toSport(entry, ACTIVE_LOCALE))
+export const sports: Sport[] = generatedSports.map((entry) => toSport(entry, getCurrentLocale()))
 
 export const DEFAULT_SPORT_ID = sports.find((sport) => sport.enabled)?.id ?? 'beachvolley'
 
@@ -44,7 +42,7 @@ export function getSupportedLocales(): readonly string[] {
   return SUPPORTED_LOCALES
 }
 
-export function getEnabledSports(locale = ACTIVE_LOCALE): Sport[] {
+export function getEnabledSports(locale = getCurrentLocale()): Sport[] {
   return generatedSports
     .filter((sport) => sport.enabled)
     .map((sport) => toSport(sport, locale))
@@ -71,16 +69,16 @@ export function normalizeSportId(rawValue?: string | null): string | undefined {
   return matched?.id
 }
 
-export function getSportLabel(sportId?: string | null, locale = ACTIVE_LOCALE): string {
+export function getSportLabel(sportId?: string | null, locale = getCurrentLocale()): string {
   const normalized = normalizeSportId(sportId)
   if (!normalized) {
-    return 'Utan vald sport'
+    return locale === 'en' ? 'No selected sport' : 'Utan vald sport'
   }
 
   return resolveSportLabel(normalized, locale)
 }
 
-export function getSportOrder(locale = ACTIVE_LOCALE): string[] {
+export function getSportOrder(locale = getCurrentLocale()): string[] {
   const labels = getEnabledSports(locale).map((sport) => sport.label)
-  return [...labels, 'Utan vald sport']
+  return [...labels, locale === 'en' ? 'No selected sport' : 'Utan vald sport']
 }

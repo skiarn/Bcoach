@@ -37,16 +37,18 @@ function getAllSkills(locale = DEFAULT_LOCALE): Skill[] {
     .map((entry) => toSkill(entry, locale))
 }
 
-const ACTIVE_LOCALE = getCurrentLocale()
+export function getSkills(locale = getCurrentLocale()): Skill[] {
+  return getAllSkills(locale)
+}
 
-export const skills: Skill[] = getAllSkills(ACTIVE_LOCALE)
+export const skills: Skill[] = getSkills()
 
-export function getSkillsBySport(sportId: string, locale = ACTIVE_LOCALE): Skill[] {
+export function getSkillsBySport(sportId: string, locale = getCurrentLocale()): Skill[] {
   const normalized = normalizeSportId(sportId) ?? sportId
   return getAllSkills(locale).filter((skill) => skill.sportId === normalized)
 }
 
-export function findSkill(skillName?: string | null, sportIdOrType?: string | null, locale = ACTIVE_LOCALE): Skill | undefined {
+export function findSkill(skillName?: string | null, sportIdOrType?: string | null, locale = getCurrentLocale()): Skill | undefined {
   const name = skillName?.trim()
   if (!name) {
     return undefined
@@ -61,7 +63,7 @@ export function findSkill(skillName?: string | null, sportIdOrType?: string | nu
   return localizedSkills.find((skill) => skill.name === name && skill.sportId === normalizedSportId)
 }
 
-export function findSkillById(skillId?: string | null, locale = ACTIVE_LOCALE): Skill | undefined {
+export function findSkillById(skillId?: string | null, locale = getCurrentLocale()): Skill | undefined {
   const normalizedId = skillId?.trim()
   if (!normalizedId) {
     return undefined

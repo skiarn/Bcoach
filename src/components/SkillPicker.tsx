@@ -1,5 +1,6 @@
-import { skills } from '../utils/skills.ts'
+import { getSkills } from '../utils/skills.ts'
 import { getEnabledSports, normalizeSportId } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 interface SkillPickerProps {
   label: string
@@ -22,15 +23,17 @@ function SkillPicker({
   helperText,
   className,
 }: SkillPickerProps): JSX.Element {
+  const { locale } = useI18n()
   const normalizedSelectedSport = normalizeSportId(selectedSkillType) ?? selectedSkillType
-  const availableSports = getEnabledSports()
-  const filteredSkills = skills.filter((skill) => skill.sportId === normalizedSelectedSport)
+  const availableSports = getEnabledSports(locale)
+  const localizedSkills = getSkills(locale)
+  const filteredSkills = localizedSkills.filter((skill) => skill.sportId === normalizedSelectedSport)
 
   const handleTypeChange = (nextType: string) => {
     const normalizedNextType = normalizeSportId(nextType) ?? nextType
     onSkillTypeChange(nextType)
 
-    const existsInNextType = skills.some(
+    const existsInNextType = localizedSkills.some(
       (entry) => entry.sportId === normalizedNextType && entry.name === selectedSkillName
     )
 

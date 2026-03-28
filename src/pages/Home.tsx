@@ -1,19 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import UploadButton from '../components/UploadButton.tsx'
 import AppNav from '../components/AppNav.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
-import { findSkill, findSkillById, skills } from '../utils/skills.ts'
+import { findSkill, findSkillById, getSkills } from '../utils/skills.ts'
 import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
 import { addImportedVideoFile } from '../services/videoLibrary.ts'
 import { DEFAULT_SPORT_ID, normalizeSportId } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 interface HomeProps {
   onVideoSelect: (file: File | Blob, url: string, metadata?: EmbeddedAnalysisMetadata, libraryId?: string) => void
 }
 
 function Home({ onVideoSelect }: HomeProps): JSX.Element {
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [isImportingMultiple, setIsImportingMultiple] = useState(false)
@@ -31,6 +33,7 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
   const [sportFilter, setSportFilter] = useState<string>(initialSkill?.sportId ?? initialSport)
   const [selectedSkillName, setSelectedSkillName] = useState<string>(initialSkill?.name ?? '')
   const [isHeroExpanded, setIsHeroExpanded] = useState<boolean>(!initialSkill?.name)
+  const localizedSkills = useMemo(() => getSkills(locale), [locale])
 
   const handleSkillTypeChange = (skillType: string) => {
     setSportFilter(skillType)
@@ -46,7 +49,7 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     params.set('sport', sportFilter)
 
     if (selectedSkillName) {
-      const selectedSkill = skills.find((entry) => entry.name === selectedSkillName && entry.sportId === sportFilter)
+      const selectedSkill = localizedSkills.find((entry) => entry.name === selectedSkillName && entry.sportId === sportFilter)
       params.set('skill', selectedSkillName)
       if (selectedSkill) {
         params.set('skillId', selectedSkill.id)
@@ -59,7 +62,7 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     if (nextSearch !== currentSearch) {
       navigate({ pathname: '/', search: `?${nextSearch}` }, { replace: true })
     }
-  }, [sportFilter, selectedSkillName, searchParams, navigate])
+  }, [sportFilter, selectedSkillName, searchParams, navigate, localizedSkills])
 
   const handleVideoSelect = (
     file: File | Blob,
@@ -68,7 +71,7 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     libraryId?: string
   ) => {
     if (selectedSkillName) {
-      const skill = skills.find(s => s.name === selectedSkillName && s.sportId === sportFilter)
+      const skill = localizedSkills.find(s => s.name === selectedSkillName && s.sportId === sportFilter)
       if (skill) {
         navigate('/analyze', {
           state: { skill, videoFile: file, videoUrl: url, embeddedMetadata: metadata, libraryId }
@@ -113,15 +116,14 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
         }
       }
 
-      alert(`Importerade ${files.length} video(s). Du kan se dem i historiken.`)
+      alert(t('home.importMany.doneAlert', { count: files.length }))
       setImportProgress(null)
 
       setTimeout(() => {
         navigate('/history')
       }, 500)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Import failed'
-      setImportError(message)
+      setImportError(t('home.importMany.genericError'))
       console.error('Batch import error:', error)
     } finally {
       setIsImportingMultiple(false)
@@ -138,17 +140,17 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
           type="button"
           onClick={() => setIsHeroExpanded(!isHeroExpanded)}
           className="home-hero-kicker-btn"
-          title={isHeroExpanded ? 'Minimera' : 'Expandera'}
+          title={isHeroExpanded ? t('home.heroToggle.minimize') : t('home.heroToggle.expand')}
         >
-          <p className="home-hero-kicker">{isHeroExpanded ? '▼' : '▶'} Din digitala tränarpartner</p>
+          <p className="home-hero-kicker">{isHeroExpanded ? '▼' : '▶'} {t('home.heroKicker')}</p>
         </button>
         <div className={`hero-content ${isHeroExpanded ? 'visible' : 'hidden'}`}>
-          <h1 className="home-hero-title">Träna smartare. Spela vassare.</h1>
+          <h1 className="home-hero-title">{t('home.title')}</h1>
           <h2 className="home-hero-subtitle">
-            Ladda upp eller spela in din teknik, analysera ruta för ruta och få tydlig feedback som lyfter nästa träning.
+            {t('home.subtitle')}
           </h2>
           <SkillPicker
-            label="Välj teknik att öva (valfritt)"
+            label={t('home.skillPickerLabel')}
             selectedSkillType={sportFilter}
             selectedSkillName={selectedSkillName}
             onSkillTypeChange={handleSkillTypeChange}
@@ -162,8 +164,8 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
         <UploadButton onVideoSelect={handleVideoSelect} />
 
         <div style={{ marginTop: '30px', padding: '20px', border: '2px dashed #0078d4', borderRadius: '8px', backgroundColor: '#f5f5f5' }}>
-          <h3>Importera flera videor</h3>
-          <p>Välj flera videofiler på en gång för att snabbt importera dem till biblioteket.</p>
+          <h3>{t('home.importMany.title')}</h3>
+          <p>{t('home.importMany.body')}</p>
           <input
             type="file"
             accept="video/*"
@@ -186,13 +188,13 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
               fontWeight: 'bold',
             }}
           >
-            {isImportingMultiple ? 'Importerar...' : 'Välj videor'}
+            {isImportingMultiple ? t('home.importMany.importing') : t('home.importMany.selectVideos')}
           </label>
 
           {importProgress && (
             <div style={{ marginTop: '10px' }}>
               <p>
-                Importerar: {importProgress.current} / {importProgress.total}
+                {t('home.importMany.progress', { current: importProgress.current, total: importProgress.total })}
               </p>
               <div style={{ width: '100%', height: '8px', backgroundColor: '#ddd', borderRadius: '4px', overflow: 'hidden' }}>
                 <div
@@ -209,7 +211,7 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
 
           {importError && (
             <p style={{ marginTop: '10px', color: '#d13438' }}>
-              Fel under import: {importError}
+              {t('home.importMany.error', { error: importError })}
             </p>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { EmbeddedAnalysisMetadata } from '../../types/analysis.ts'
 import { VideoLibraryListItem } from '../../services/videoLibrary.ts'
 import { getSportLabel } from '../../utils/sports.ts'
+import { getCurrentLocale } from '../../utils/locale.ts'
 
 export type DashboardRange = '7d' | '30d' | 'all'
 
@@ -53,6 +54,14 @@ export function getSkillTypeLabel(skillType?: string): string {
   return getSportLabel(skillType)
 }
 
+function getLocaleDateTag(): string {
+  return getCurrentLocale() === 'en' ? 'en-US' : 'sv-SE'
+}
+
+function getNoSelectedSkillLabel(): string {
+  return getCurrentLocale() === 'en' ? 'No selected technique' : 'Utan vald teknik'
+}
+
 function getRangeStartTimestamp(range: DashboardRange, nowTimestamp: number): number {
   if (range === '7d') return nowTimestamp - (7 * 24 * 60 * 60 * 1000)
   if (range === '30d') return nowTimestamp - (30 * 24 * 60 * 60 * 1000)
@@ -90,7 +99,7 @@ export function computeDashboardStats(items: VideoLibraryListItem[], range: Dash
 
   const avgFeedbackPerSession = totalSessions > 0 ? totalFeedbackPoints / totalSessions : 0
   const avgNextStepsPerSession = totalSessions > 0 ? totalNextSteps / totalSessions : 0
-  const rangeLabel = range === '7d' ? '7 dagar' : range === '30d' ? '30 dagar' : 'Alla'
+  const rangeLabel = range
 
   const sessionDaySet = new Set(dashboardItems.map((item) => getDayKey(item.createdAt)))
   let streakDays = 0
@@ -137,7 +146,7 @@ export function computeDashboardStats(items: VideoLibraryListItem[], range: Dash
     const dayKey = getDayKey(item.createdAt)
     const metadata = metadataOrEmpty(item.metadata)
     const existing = trendByDay.get(dayKey)
-    const label = new Date(item.createdAt).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })
+    const label = new Date(item.createdAt).toLocaleDateString(getLocaleDateTag(), { month: 'short', day: 'numeric' })
 
     if (existing) {
       existing.feedback += metadata.feedback.length
@@ -164,7 +173,7 @@ export function computeDashboardStats(items: VideoLibraryListItem[], range: Dash
   dashboardItems.forEach((item) => {
     const metadata = metadataOrEmpty(item.metadata)
     const typeLabel = getSkillTypeLabel(metadata.sportId ?? metadata.skillType)
-    const skillName = metadata.skillName?.trim() || 'Utan vald teknik'
+    const skillName = metadata.skillName?.trim() || getNoSelectedSkillLabel()
     const key = `${typeLabel}::${skillName}`
     const existing = skillProgressMap.get(key)
 
@@ -213,7 +222,7 @@ export function computeDashboardStats(items: VideoLibraryListItem[], range: Dash
 export function groupItemsBySkill(items: VideoLibraryListItem[]): Record<string, Record<string, VideoLibraryListItem[]>> {
   return items.reduce<Record<string, Record<string, VideoLibraryListItem[]>>>((acc, item) => {
     const typeKey = getSkillTypeLabel(item.metadata?.sportId ?? item.metadata?.skillType)
-    const skillKey = item.metadata?.skillName?.trim() || 'Utan vald teknik'
+    const skillKey = item.metadata?.skillName?.trim() || getNoSelectedSkillLabel()
 
     if (!acc[typeKey]) {
       acc[typeKey] = {}

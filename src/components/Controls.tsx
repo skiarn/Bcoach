@@ -14,6 +14,8 @@ interface ControlsProps {
   isFullscreen?: boolean
 }
 
+import { useI18n } from '../i18n/I18nProvider.tsx'
+
 function Controls({
   isPlaying,
   playbackRate,
@@ -29,6 +31,7 @@ function Controls({
   onToggleFullscreen,
   isFullscreen = false,
 }: ControlsProps): JSX.Element {
+  const { t } = useI18n()
   const sliderMax = Math.max(duration, currentTime, 0.1)
 
   const formatTime = (time: number): string => {
@@ -52,11 +55,11 @@ function Controls({
         <div className="controls-right-actions">
           {onToggleDrawing && (
             <button className="controls-btn" onClick={onToggleDrawing}>
-              {showDrawingCanvas ? '✏️ Stäng' : '✏️ Rita'}
+              {showDrawingCanvas ? `✏️ ${t('controls.closeDrawing')}` : `✏️ ${t('controls.openDrawing')}`}
             </button>
           )}
           {onToggleFullscreen && videoLoaded && (
-            <button className="controls-btn controls-btn--fullscreen" onClick={onToggleFullscreen} title={isFullscreen ? 'Avsluta fullskärm' : 'Fullskärm'}>
+            <button className="controls-btn controls-btn--fullscreen" onClick={onToggleFullscreen} title={isFullscreen ? t('controls.exitFullscreen') : t('controls.fullscreen')}>
               {isFullscreen ? (
                 <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
               ) : (
@@ -88,7 +91,7 @@ function Controls({
             className={`controls-btn controls-btn--speed ${playbackRate === speed ? 'active' : ''}`}
             onClick={() => onSpeedChange(speed)}
           >
-            {speed}x
+            {speed}{t('common.speedSuffix')}
           </button>
         ))}
       </div>

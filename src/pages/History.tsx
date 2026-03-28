@@ -7,6 +7,8 @@ import HistoryDashboard from '../components/history/HistoryDashboard.tsx'
 import HistorySkillGroups from '../components/history/HistorySkillGroups.tsx'
 import { computeDashboardStats, DashboardRange, groupItemsBySkill } from '../components/history/historyData.ts'
 import { getSportOrder } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
+import Trans from '../components/Trans.tsx'
 import {
   deleteVideoLibraryRecord,
   getVideoLibraryRecord,
@@ -16,8 +18,8 @@ import {
   VideoLibraryRecord,
 } from '../services/videoLibrary.ts'
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('sv-SE', {
+function formatDate(timestamp: number, locale: string): string {
+  return new Date(timestamp).toLocaleDateString(locale === 'en' ? 'en-US' : 'sv-SE', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -34,6 +36,7 @@ function formatBytes(bytes: number): string {
 }
 
 function History(): JSX.Element {
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<VideoLibraryListItem[]>([])
@@ -148,7 +151,7 @@ function History(): JSX.Element {
   )
 
   const groupedItems = useMemo(() => groupItemsBySkill(items), [items])
-  const typeOrder = getSportOrder()
+  const typeOrder = getSportOrder(locale)
 
   const handlePlay = () => {
     if (!videoRef.current) return
@@ -224,9 +227,9 @@ function History(): JSX.Element {
     <div className="history">
       <AppNav />
       <header className="page-header">
-        <h1>Mina videos</h1>
-        <p>Folj din utveckling, jamfor analyser och bygg momentum over tid.</p>
-        <div className="history-view-toggle" role="tablist" aria-label="Historikvy">
+        <h1><Trans k="history.title" /></h1>
+        <p>{t('history.subtitle')}</p>
+        <div className="history-view-toggle" role="tablist" aria-label={t('history.viewLabel')}>
           <button
             type="button"
             role="tab"
@@ -234,7 +237,7 @@ function History(): JSX.Element {
             className={historyView === 'videos' ? 'active' : ''}
             onClick={() => handleViewChange('videos')}
           >
-            Videos
+            {t('history.viewVideos')}
           </button>
           <button
             type="button"
@@ -243,7 +246,7 @@ function History(): JSX.Element {
             className={historyView === 'insights' ? 'active' : ''}
             onClick={() => handleViewChange('insights')}
           >
-            Insights
+            {t('history.viewInsights')}
           </button>
         </div>
       </header>
@@ -254,10 +257,10 @@ function History(): JSX.Element {
             range={dashboardRange}
             onRangeChange={setDashboardRange}
             stats={dashboardStats}
-            formatDate={formatDate}
+            formatDate={(timestamp) => formatDate(timestamp, locale)}
           />
           <p className="history-mode-hint">
-            Tips: byt till Videos för att öppna och redigera en specifik inspelning.
+            {t('history.insightHint')}
           </p>
         </>
       ) : (
@@ -272,13 +275,13 @@ function History(): JSX.Element {
               selectedId={selectedId}
               onOpenItem={setSelectedId}
               onDelete={(id) => void handleDelete(id)}
-              formatDate={formatDate}
+              formatDate={(timestamp) => formatDate(timestamp, locale)}
               formatBytes={formatBytes}
             />
 
             <section className="history-main-panel">
               {!selectedRecord || !selectedUrl ? (
-                <p>Välj en video från listan för att visa analysinnehåll.</p>
+                <p>{t('history.selectVideo')}</p>
               ) : (
                 <>
                   <h2 style={{ marginTop: 0 }}>{selectedRecord.name}</h2>
@@ -331,15 +334,15 @@ function History(): JSX.Element {
 
                   <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
                     <button type="button" className="history-action-btn history-action-btn--edit" onClick={handleOpenInAnalyze}>
-                      Öppna i analys
+                      {t('history.openAnalyze')}
                     </button>
                   </div>
 
                   <div style={{ marginTop: '18px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div>
-                      <h3>Feedback</h3>
+                      <h3>{t('history.feedback')}</h3>
                       {feedback.length === 0 ? (
-                        <p>Ingen sparad feedback.</p>
+                        <p>{t('history.feedbackEmpty')}</p>
                       ) : (
                         <ul>
                           {feedback.map((item, index) => (
@@ -350,9 +353,9 @@ function History(): JSX.Element {
                     </div>
 
                     <div>
-                      <h3>Nästa steg</h3>
+                      <h3>{t('history.nextSteps')}</h3>
                       {nextSteps.length === 0 ? (
-                        <p>Inga sparade nästa steg.</p>
+                        <p>{t('history.nextStepsEmpty')}</p>
                       ) : (
                         <ul>
                           {nextSteps.map((item, index) => (

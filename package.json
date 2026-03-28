@@ -10,6 +10,7 @@
     "prebuild": "npm run build:catalog && node scripts/copy-ffmpeg-core.mjs",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "check:i18n": "node scripts/check-i18n-literals.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

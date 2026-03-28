@@ -6,12 +6,14 @@ import ShapeOverlay from '../components/ShapeOverlay.tsx'
 import Controls from '../components/Controls.tsx'
 import FeedbackPanel from '../components/FeedbackPanel.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
-import { findSkill, findSkillById, Skill, skills } from '../utils/skills.ts'
+import AppNav from '../components/AppNav.tsx'
+import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
 import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
 import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
 import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
 import { DEFAULT_SPORT_ID } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 interface VideoAnalysis {
   id: string
@@ -43,6 +45,7 @@ function Analyze({
   embeddedMetadata: propEmbeddedMetadata,
   onBack,
 }: AnalyzeProps): JSX.Element {
+  const { t, locale } = useI18n()
   const navigate = useNavigate()
   const location = useLocation()
   const stateSkill: Skill | undefined = location.state?.skill
@@ -50,12 +53,12 @@ function Analyze({
   const routeEmbeddedMetadata = location.state?.embeddedMetadata as EmbeddedAnalysisMetadata | undefined
   const embeddedMetadata = propEmbeddedMetadata ?? routeEmbeddedMetadata
   const metadataSkill = useMemo(
-    () => findSkillById(embeddedMetadata?.skillId) ?? findSkill(embeddedMetadata?.skillName, embeddedMetadata?.sportId ?? embeddedMetadata?.skillType),
-    [embeddedMetadata?.skillId, embeddedMetadata?.skillName, embeddedMetadata?.sportId, embeddedMetadata?.skillType]
+    () => findSkillById(embeddedMetadata?.skillId, locale) ?? findSkill(embeddedMetadata?.skillName, embeddedMetadata?.sportId ?? embeddedMetadata?.skillType, locale),
+    [embeddedMetadata?.skillId, embeddedMetadata?.skillName, embeddedMetadata?.sportId, embeddedMetadata?.skillType, locale]
   )
   const existingAnalysisSkill = useMemo(
-    () => findSkillById(existingAnalysis?.skillId) ?? findSkill(existingAnalysis?.skillName, existingAnalysis?.sportId ?? existingAnalysis?.skillType),
-    [existingAnalysis?.skillId, existingAnalysis?.skillName, existingAnalysis?.sportId, existingAnalysis?.skillType]
+    () => findSkillById(existingAnalysis?.skillId, locale) ?? findSkill(existingAnalysis?.skillName, existingAnalysis?.sportId ?? existingAnalysis?.skillType, locale),
+    [existingAnalysis?.skillId, existingAnalysis?.skillName, existingAnalysis?.sportId, existingAnalysis?.skillType, locale]
   )
   const derivedSkill = stateSkill ?? metadataSkill ?? existingAnalysisSkill
   const videoUrl = propVideoUrl || location.state?.videoUrl
@@ -83,12 +86,13 @@ function Analyze({
   if (!effectiveVideoUrl) {
     return (
       <div className="analyze">
+        <AppNav />
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button onClick={onBack}>← Tillbaka</button>
-          <h1>Videoanalys</h1>
+          <button onClick={onBack}>← {t('common.back')}</button>
+          <h1>{t('analyze.titleNoVideo')}</h1>
           <div></div>
         </header>
-        <p>Ingen video vald. Välj en video först.</p>
+        <p>{t('analyze.noVideo')}</p>
       </div>
     )
   }
@@ -134,8 +138,8 @@ function Analyze({
   }, [derivedSkill?.name, derivedSkill?.sportId])
 
   const availableSkills = useMemo(
-    () => skills.filter((entry) => entry.sportId === selectedSkillType),
-    [selectedSkillType]
+    () => getSkills(locale).filter((entry) => entry.sportId === selectedSkillType),
+    [selectedSkillType, locale]
   )
 
   const skill = useMemo(
@@ -403,7 +407,7 @@ function Analyze({
 
     const response = await fetch(effectiveVideoUrl)
     if (!response.ok) {
-      throw new Error('Kunde inte läsa videofilen för export.')
+      throw new Error(t('analyze.error.readVideo'))
     }
 
     return response.blob()
@@ -464,7 +468,9 @@ function Analyze({
       console.log('[Export] Download triggered, export complete!')
       setIsSaved(true)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Kunde inte spara videon just nu.'
+      const message = error instanceof Error && error.message === t('analyze.error.readVideo')
+        ? error.message
+        : t('analyze.error.saveVideo')
       console.error('[Export] Error:', message, error)
       setSaveError(message)
     } finally {
@@ -483,7 +489,7 @@ function Analyze({
 
   const saveAnalysisToLibrary = async (nextShapes: Shape[]) => {
     if (!location.state?.libraryId) {
-      setSaveError('Kunde inte spara: Video-ID saknas')
+      setSaveError(t('analyze.error.missingVideoId'))
       return
     }
 
@@ -493,7 +499,7 @@ function Analyze({
       const libraryId = location.state.libraryId as string
       const record = await getVideoLibraryRecord(libraryId)
       if (!record) {
-        setSaveError('Kunde inte hitta videon i biblioteket')
+        setSaveError(t('analyze.error.videoMissing'))
         return
       }
 
@@ -525,7 +531,7 @@ function Analyze({
 
       setIsSaved(true)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Kunde inte spara analysen.'
+      const message = t('analyze.error.saveAnalysis')
       console.error('[LibrarySave] Error:', message, error)
       setSaveError(message)
     }
@@ -554,10 +560,10 @@ function Analyze({
   }
 
   const getStepTitle = () => {
-    if (currentStep === 'draw') return 'Steg 1: Rita och redigera video'
-    if (currentStep === 'feedback') return 'Steg 2: Fyll i Feedback'
-    if (currentStep === 'nextSteps') return 'Steg 3: Välj Nästa steg'
-    return 'Steg 4: Spara analys'
+    if (currentStep === 'draw') return t('analyze.stepTitle.draw')
+    if (currentStep === 'feedback') return t('analyze.stepTitle.feedback')
+    if (currentStep === 'nextSteps') return t('analyze.stepTitle.nextSteps')
+    return t('analyze.stepTitle.save')
   }
 
   const getHomeSelectionSearch = (): string => {
@@ -573,17 +579,18 @@ function Analyze({
 
   return (
     <div className="analyze">
+      <AppNav />
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <button onClick={onBack}>← Tillbaka</button>
-        <h1>Videoanalys: {videoName}</h1>
+        <button onClick={onBack}>← {t('common.back')}</button>
+        <h1>{t('analyze.title', { videoName })}</h1>
         <div></div>
       </header>
 
       <div className="analyze-stepper" style={{ marginBottom: '16px' }}>
-        <div className={`analyze-step ${currentStep === 'draw' ? 'active' : ''}`}>1. Rita</div>
-        <div className={`analyze-step ${currentStep === 'feedback' ? 'active' : ''}`}>2. Feedback</div>
-        <div className={`analyze-step ${currentStep === 'nextSteps' ? 'active' : ''}`}>3. Nästa steg</div>
-        <div className={`analyze-step ${currentStep === 'save' ? 'active' : ''}`}>4. Spara</div>
+        <div className={`analyze-step ${currentStep === 'draw' ? 'active' : ''}`}>1. {t('analyze.step1')}</div>
+        <div className={`analyze-step ${currentStep === 'feedback' ? 'active' : ''}`}>2. {t('analyze.step2')}</div>
+        <div className={`analyze-step ${currentStep === 'nextSteps' ? 'active' : ''}`}>3. {t('analyze.step3')}</div>
+        <div className={`analyze-step ${currentStep === 'save' ? 'active' : ''}`}>4. {t('analyze.step4')}</div>
       </div>
 
       <div style={{ position: 'relative', display: 'block' }}>
@@ -662,17 +669,17 @@ function Analyze({
 
           {showDrawingCanvas && (
             <div className="drawing-tools">
-              <button onClick={() => setTool("line")}>Line</button>
-              <button onClick={() => setTool("circle")}>Circle</button>
-              <button onClick={() => setTool("none")}>None</button>
-              <button onClick={undoLastShape}>Undo</button>
-              <button onClick={clearCanvas}>Clear</button>
+              <button onClick={() => setTool("line")}>{t('analyze.tool.line')}</button>
+              <button onClick={() => setTool("circle")}>{t('analyze.tool.circle')}</button>
+              <button onClick={() => setTool("none")}>{t('analyze.tool.none')}</button>
+              <button onClick={undoLastShape}>{t('analyze.tool.undo')}</button>
+              <button onClick={clearCanvas}>{t('analyze.tool.clear')}</button>
             </div>
           )}
 
           {showDrawingCanvas && shapes.length > 0 && (
             <div className="shape-timeline-editor">
-              <h3>Visa ritningar under delar av videon</h3>
+              <h3>{t('analyze.timeline.title')}</h3>
 
               <div className="shape-selector-list">
                 {shapes.map((shape, index) => (
@@ -682,7 +689,7 @@ function Analyze({
                     className={selectedShapeId === shape.id ? 'active' : ''}
                     onClick={() => setSelectedShapeId(shape.id)}
                   >
-                    {shape.type === 'line' ? 'Linje' : 'Cirkel'} #{index + 1}
+                    {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
                   </button>
                 ))}
               </div>
@@ -690,7 +697,7 @@ function Analyze({
               {selectedShape && (
                 <div className="shape-range-controls">
                   <label>
-                    Start: {formatTime(selectedShape.visibleFrom ?? 0)}
+                    {t('analyze.timeline.start', { time: formatTime(selectedShape.visibleFrom ?? 0) })}
                     <input
                       type="range"
                       min={0}
@@ -703,7 +710,7 @@ function Analyze({
                   </label>
 
                   <label>
-                    Slut: {formatTime(selectedShape.visibleTo ?? duration)}
+                    {t('analyze.timeline.end', { time: formatTime(selectedShape.visibleTo ?? duration) })}
                     <input
                       type="range"
                       min={0}
@@ -729,10 +736,10 @@ function Analyze({
             {currentStep === 'draw' && (
               <div>
                 <p>
-                  Spela upp videon, rita linjer/cirklar och justera när ritningarna ska synas.
+                  {t('analyze.draw.help')}
                 </p>
                 <p style={{ color: '#555', fontSize: '0.9rem' }}>
-                  Tips: Välj en form i tidslinjen och finjustera Start/Slut under videon.
+                  {t('analyze.draw.tip')}
                 </p>
                 <h3 style={{ marginTop: '14px' }}>{getStepTitle()}</h3>
               </div>
@@ -753,7 +760,7 @@ function Analyze({
               <div>
                 {!skill && (
                   <SkillPicker
-                    label="Välj sport och teknik för att få relevanta nästa steg"
+                    label={t('analyze.nextSteps.skillLabel')}
                     selectedSkillType={selectedSkillType}
                     selectedSkillName={selectedSkillName}
                     onSkillTypeChange={setSelectedSkillType}
@@ -778,13 +785,13 @@ function Analyze({
               <div>
                 {!isSaved ? (
                   <>
-                    <p>Redo att spara videon - välj antingen lokalt spara (i biblioteket) eller exportera (ladda ner med metadata).</p>
+                    <p>{t('analyze.save.ready')}</p>
                     <ul style={{ margin: '10px 0 0 18px' }}>
-                      <li>Feedbackpunkter: {customFeedback.length}</li>
-                      <li>Nästa steg: {customNextSteps.length}</li>
+                      <li>{t('analyze.save.feedbackPoints', { count: customFeedback.length })}</li>
+                      <li>{t('analyze.save.nextSteps', { count: customNextSteps.length })}</li>
                     </ul>
                     <p style={{ marginTop: '10px', color: '#555' }}>
-                      Lokalt spara sparar analysen i biblioteket. Exportera skapar en ny fil med all data inbrändad i videons metadata.
+                      {t('analyze.save.help')}
                     </p>
                     {saveError && (
                       <p style={{ marginTop: '8px', color: '#c62828' }}>
@@ -794,11 +801,11 @@ function Analyze({
                   </>
                 ) : (
                   <div className="analysis-saved-panel">
-                    <h4>Analysen är sparad</h4>
-                    <p>Du kan nu öppna videon igen och samma analys kommer att visas.</p>
+                    <h4>{t('analyze.saved.title')}</h4>
+                    <p>{t('analyze.saved.body')}</p>
                     <div className="analysis-saved-actions">
                       <button type="button" onClick={() => navigate(`/${getHomeSelectionSearch() ? `?${getHomeSelectionSearch()}` : ''}`)}>
-                        Öva och spela in igen
+                        {t('analyze.saved.cta')}
                       </button>
                     </div>
                   </div>
@@ -808,7 +815,7 @@ function Analyze({
 
             <div className="analyze-step-actions">
               <button type="button" onClick={goToPreviousStep} disabled={stepIndex === 0}>
-                ← Föregående
+                ← {t('analyze.prev')}
               </button>
               {currentStep === 'save' ? (
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -816,23 +823,23 @@ function Analyze({
                     type="button"
                     onClick={quickSaveAnalysis}
                     disabled={isSaved || isExporting}
-                    title="Spara analysen i biblioteket utan att ladda ned"
+                    title={t('analyze.quickSave.title')}
                   >
-                    {isExporting ? 'Sparar...' : '💾 Spara lokalt'}
+                    {isExporting ? t('analyze.saving') : `💾 ${t('analyze.quickSave')}`}
                   </button>
                   <button
                     type="button"
                     onClick={saveAnalysis}
                     className="analyze-save-cta"
                     disabled={isSaved || isExporting}
-                    title="Exportera videon med metadata och ladda ned"
+                    title={t('analyze.export.title')}
                   >
-                    {isSaved ? 'Exporterad' : isExporting ? 'Exporterar...' : '⬇️ Exportera & Ladda ned'}
+                    {isSaved ? t('analyze.exported') : isExporting ? t('analyze.exporting') : `⬇️ ${t('analyze.export')}`}
                   </button>
                 </div>
               ) : (
                 <button type="button" onClick={goToNextStep} disabled={stepIndex === stepOrder.length - 1}>
-                  Nästa →
+                  {t('analyze.next')} →
                 </button>
               )}
             </div>
