@@ -39,21 +39,21 @@ function AppNav(): JSX.Element {
             className={locale === 'sv' ? 'active' : ''}
             onClick={() => handleLanguageChange('sv')}
           >
-            SV
+            {t('nav.lang.sv')}
           </button>
           <button
             type="button"
             className={locale === 'en' ? 'active' : ''}
             onClick={() => handleLanguageChange('en')}
           >
-            EN
+            {t('nav.lang.en')}
           </button>
           <button
             type="button"
             className={locale === 'es' ? 'active' : ''}
             onClick={() => handleLanguageChange('es')}
           >
-            ES
+            {t('nav.lang.es')}
           </button>
         </div>
       </div>
