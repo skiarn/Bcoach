@@ -1,16 +1,19 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { skills } from '../utils/skills.ts'
+import { findSkill, findSkillById } from '../utils/skills.ts'
 import UploadButton from '../components/UploadButton.tsx'
 import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
-
-interface SkillPracticeProps {
-}
+import { getSportLabel, normalizeSportId } from '../utils/sports.ts'
 
 function SkillPractice(): JSX.Element {
-  const { skillName, type } = useParams<{ skillName: string; type: string }>()
+  const { paramA, paramB } = useParams<{ paramA: string; paramB: string }>()
   const navigate = useNavigate()
 
-  const skill = skills.find(s => s.name === decodeURIComponent(skillName || '') && s.type === type)
+  const firstSegment = decodeURIComponent(paramA || '')
+  const secondSegment = decodeURIComponent(paramB || '')
+  const maybeSportId = normalizeSportId(firstSegment)
+  const skill = maybeSportId
+    ? findSkillById(secondSegment)
+    : findSkill(firstSegment, secondSegment)
 
   if (!skill) {
     return <div>Skill not found</div>
@@ -30,7 +33,7 @@ function SkillPractice(): JSX.Element {
   return (
     <div className="skill-practice">
       <header>
-        <h1>🏐 Öva {skill.name} ({skill.type})</h1>
+        <h1>🏐 Öva {skill.name} ({getSportLabel(skill.sportId)})</h1>
         <nav className="nav-links">
           <Link to="/training">Tillbaka till träning</Link>
           <Link to="/history">Mina videos</Link>

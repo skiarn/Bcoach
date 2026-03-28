@@ -6,11 +6,12 @@ import ShapeOverlay from '../components/ShapeOverlay.tsx'
 import Controls from '../components/Controls.tsx'
 import FeedbackPanel from '../components/FeedbackPanel.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
-import { Skill, skills } from '../utils/skills.ts'
+import { findSkill, findSkillById, Skill, skills } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
 import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
 import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
 import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
+import { DEFAULT_SPORT_ID } from '../utils/sports.ts'
 
 interface VideoAnalysis {
   id: string
@@ -20,6 +21,8 @@ interface VideoAnalysis {
   feedback: string[]
   nextSteps: string[]
   timestamp: number
+  sportId?: string
+  skillId?: string
   skillName?: string
   skillType?: string
 }
@@ -47,14 +50,14 @@ function Analyze({
   const routeEmbeddedMetadata = location.state?.embeddedMetadata as EmbeddedAnalysisMetadata | undefined
   const embeddedMetadata = propEmbeddedMetadata ?? routeEmbeddedMetadata
   const metadataSkill = useMemo(
-    () => skills.find(
-      (entry) => entry.name === embeddedMetadata?.skillName && entry.type === embeddedMetadata?.skillType
-    ),
-    [embeddedMetadata?.skillName, embeddedMetadata?.skillType]
+    () => findSkillById(embeddedMetadata?.skillId) ?? findSkill(embeddedMetadata?.skillName, embeddedMetadata?.sportId ?? embeddedMetadata?.skillType),
+    [embeddedMetadata?.skillId, embeddedMetadata?.skillName, embeddedMetadata?.sportId, embeddedMetadata?.skillType]
   )
-  const derivedSkill = stateSkill ?? metadataSkill ?? skills.find(
-    (entry) => entry.name === existingAnalysis?.skillName && entry.type === existingAnalysis?.skillType
+  const existingAnalysisSkill = useMemo(
+    () => findSkillById(existingAnalysis?.skillId) ?? findSkill(existingAnalysis?.skillName, existingAnalysis?.sportId ?? existingAnalysis?.skillType),
+    [existingAnalysis?.skillId, existingAnalysis?.skillName, existingAnalysis?.sportId, existingAnalysis?.skillType]
   )
+  const derivedSkill = stateSkill ?? metadataSkill ?? existingAnalysisSkill
   const videoUrl = propVideoUrl || location.state?.videoUrl
   const videoFile = propVideoFile || location.state?.videoFile
 
@@ -109,7 +112,7 @@ function Analyze({
   const [isSaved, setIsSaved] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [selectedSkillType, setSelectedSkillType] = useState<Skill['type']>(derivedSkill?.type ?? 'beachvolley')
+  const [selectedSkillType, setSelectedSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
   const [selectedSkillName, setSelectedSkillName] = useState<string>(derivedSkill?.name ?? '')
 
   const rawVideoName = videoFile instanceof File
@@ -126,12 +129,12 @@ function Analyze({
       return
     }
 
-    setSelectedSkillType(derivedSkill.type)
+    setSelectedSkillType(derivedSkill.sportId)
     setSelectedSkillName(derivedSkill.name)
-  }, [derivedSkill?.name, derivedSkill?.type])
+  }, [derivedSkill?.name, derivedSkill?.sportId])
 
   const availableSkills = useMemo(
-    () => skills.filter((entry) => entry.type === selectedSkillType),
+    () => skills.filter((entry) => entry.sportId === selectedSkillType),
     [selectedSkillType]
   )
 
@@ -427,11 +430,13 @@ function Analyze({
       : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
 
     const metadata: EmbeddedAnalysisMetadata = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       savedAt: Date.now(),
       sourceVideoName: videoName,
+      sportId: skill?.sportId,
+      skillId: skill?.id,
       skillName: skill?.name,
-      skillType: skill?.type,
+      skillType: skill?.sportId,
       shapes: nextShapes,
       feedback,
       nextSteps,
@@ -501,11 +506,13 @@ function Analyze({
         : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
 
       const metadata: EmbeddedAnalysisMetadata = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         savedAt: Date.now(),
         sourceVideoName: videoName,
+        sportId: skill?.sportId,
+        skillId: skill?.id,
         skillName: skill?.name,
-        skillType: skill?.type,
+        skillType: skill?.sportId,
         shapes: nextShapes,
         feedback,
         nextSteps,
@@ -557,9 +564,10 @@ function Analyze({
     if (!skill) return ''
 
     const params = new URLSearchParams()
-    params.set('sport', skill.type)
+    params.set('sport', skill.sportId)
     params.set('skill', skill.name)
-    params.set('skillType', skill.type)
+    params.set('skillId', skill.id)
+    params.set('skillType', skill.sportId)
     return params.toString()
   }
 

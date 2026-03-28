@@ -6,6 +6,7 @@ import ShapeOverlay from '../components/ShapeOverlay.tsx'
 import HistoryDashboard from '../components/history/HistoryDashboard.tsx'
 import HistorySkillGroups from '../components/history/HistorySkillGroups.tsx'
 import { computeDashboardStats, DashboardRange, groupItemsBySkill } from '../components/history/historyData.ts'
+import { getSportOrder } from '../utils/sports.ts'
 import {
   deleteVideoLibraryRecord,
   getVideoLibraryRecord,
@@ -90,7 +91,7 @@ function History(): JSX.Element {
       const hydratedRecord = record ? await hydrateRecordMetadata(record) : null
       if (isCancelled) return
 
-      if (record && hydratedRecord.metadata && !record.metadata) {
+      if (record && hydratedRecord?.metadata && !record.metadata) {
         void refreshItems()
       }
 
@@ -147,7 +148,7 @@ function History(): JSX.Element {
   )
 
   const groupedItems = useMemo(() => groupItemsBySkill(items), [items])
-  const typeOrder = ['Beachvolley', 'Volleyboll', 'Utan vald sport']
+  const typeOrder = getSportOrder()
 
   const handlePlay = () => {
     if (!videoRef.current) return

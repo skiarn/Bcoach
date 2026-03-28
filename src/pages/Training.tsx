@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AppNav from '../components/AppNav.tsx'
 import { skills } from '../utils/skills.ts'
+import { getEnabledSports, getSportLabel } from '../utils/sports.ts'
 
 function Training(): JSX.Element {
-  const [filterType, setFilterType] = useState<'all' | 'beachvolley' | 'volleyboll'>('beachvolley')
+  const availableSports = getEnabledSports()
+  const initialFilter = availableSports[0]?.id ?? 'all'
+  const [filterType, setFilterType] = useState<string | 'all'>(initialFilter)
 
-  const filteredSkills = skills.filter(skill => filterType === 'all' || skill.type === filterType)
+  const filteredSkills = skills.filter(skill => filterType === 'all' || skill.sportId === filterType)
 
   return (
     <div className="training">
@@ -17,24 +20,17 @@ function Training(): JSX.Element {
       <main>
         <h2>Välj en teknik att öva på</h2>
         <div style={{ marginBottom: '20px' }}>
-          <label>
-            <input
-              type="radio"
-              value="beachvolley"
-              checked={filterType === 'beachvolley'}
-              onChange={() => setFilterType('beachvolley')}
-            />
-            Beachvolley
-          </label>
-          <label style={{ marginLeft: '20px' }}>
-            <input
-              type="radio"
-              value="volleyboll"
-              checked={filterType === 'volleyboll'}
-              onChange={() => setFilterType('volleyboll')}
-            />
-            Volleyboll
-          </label>
+          {availableSports.map((sport, index) => (
+            <label key={sport.id} style={index > 0 ? { marginLeft: '20px' } : undefined}>
+              <input
+                type="radio"
+                value={sport.id}
+                checked={filterType === sport.id}
+                onChange={() => setFilterType(sport.id)}
+              />
+              {sport.label}
+            </label>
+          ))}
           <label style={{ marginLeft: '20px' }}>
             <input
               type="radio"
@@ -47,10 +43,10 @@ function Training(): JSX.Element {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
           {filteredSkills.map(skill => (
-            <div key={`${skill.name}-${skill.type}`} style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
+            <div key={skill.id} style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
               <h3>{skill.name}</h3>
-              <p>({skill.type})</p>
-              <Link to={`/practice/${encodeURIComponent(skill.name)}/${skill.type}`} style={{ display: 'inline-block', marginTop: '10px', padding: '8px 16px', backgroundColor: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+              <p>({getSportLabel(skill.sportId)})</p>
+              <Link to={`/practice/${encodeURIComponent(skill.sportId)}/${encodeURIComponent(skill.id)}`} style={{ display: 'inline-block', marginTop: '10px', padding: '8px 16px', backgroundColor: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
                 Öva denna teknik
               </Link>
             </div>

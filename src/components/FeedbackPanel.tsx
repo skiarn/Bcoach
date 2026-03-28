@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Skill } from '../utils/skills.ts'
+import { getSportLabel } from '../utils/sports.ts'
 
 interface FeedbackPanelProps {
   skill?: Skill
@@ -132,7 +133,7 @@ function FeedbackPanel({
     <div className="feedback-panel">
       {skill && (
         <div className="feedback-skill-badge">
-          🏐 {skill.name} <span className="feedback-skill-type">({skill.type})</span>
+          🏐 {skill.name} <span className="feedback-skill-type">({getSportLabel(skill.sportId)})</span>
         </div>
       )}
 

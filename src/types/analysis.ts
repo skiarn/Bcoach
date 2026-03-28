@@ -14,9 +14,12 @@ export interface Shape {
 }
 
 export interface EmbeddedAnalysisMetadata {
-  schemaVersion: 1
+  schemaVersion: 1 | 2
   savedAt: number
+  sportId?: string
+  skillId?: string
   skillName?: string
+  // Legacy alias retained for compatibility with existing stored metadata.
   skillType?: string
   sourceVideoName?: string
   feedback: string[]

@@ -1,0 +1,4 @@
+sport_id,enabled,sort_order,aliases
+beachvolley,true,10,beach-volley|beach_volley
+volleyboll,true,20,volleyball|indoor-volleyball|indoor_volleyball
+tennis,true,30,lawn-tennis|racquet-sport-tennis

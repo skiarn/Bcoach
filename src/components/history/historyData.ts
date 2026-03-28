@@ -1,5 +1,6 @@
 import { EmbeddedAnalysisMetadata } from '../../types/analysis.ts'
 import { VideoLibraryListItem } from '../../services/videoLibrary.ts'
+import { getSportLabel } from '../../utils/sports.ts'
 
 export type DashboardRange = '7d' | '30d' | 'all'
 
@@ -49,9 +50,7 @@ export function getDayKey(timestamp: number): string {
 }
 
 export function getSkillTypeLabel(skillType?: string): string {
-  if (skillType === 'beachvolley') return 'Beachvolley'
-  if (skillType === 'volleyboll') return 'Volleyboll'
-  return 'Utan vald sport'
+  return getSportLabel(skillType)
 }
 
 function getRangeStartTimestamp(range: DashboardRange, nowTimestamp: number): number {
@@ -62,7 +61,7 @@ function getRangeStartTimestamp(range: DashboardRange, nowTimestamp: number): nu
 
 function metadataOrEmpty(metadata?: EmbeddedAnalysisMetadata): EmbeddedAnalysisMetadata {
   return metadata ?? {
-    schemaVersion: 1,
+    schemaVersion: 2,
     savedAt: 0,
     feedback: [],
     nextSteps: [],
@@ -164,7 +163,7 @@ export function computeDashboardStats(items: VideoLibraryListItem[], range: Dash
   const skillProgressMap = new Map<string, HistorySkillProgressItem>()
   dashboardItems.forEach((item) => {
     const metadata = metadataOrEmpty(item.metadata)
-    const typeLabel = getSkillTypeLabel(metadata.skillType)
+    const typeLabel = getSkillTypeLabel(metadata.sportId ?? metadata.skillType)
     const skillName = metadata.skillName?.trim() || 'Utan vald teknik'
     const key = `${typeLabel}::${skillName}`
     const existing = skillProgressMap.get(key)
@@ -213,7 +212,7 @@ export function computeDashboardStats(items: VideoLibraryListItem[], range: Dash
 
 export function groupItemsBySkill(items: VideoLibraryListItem[]): Record<string, Record<string, VideoLibraryListItem[]>> {
   return items.reduce<Record<string, Record<string, VideoLibraryListItem[]>>>((acc, item) => {
-    const typeKey = getSkillTypeLabel(item.metadata?.skillType)
+    const typeKey = getSkillTypeLabel(item.metadata?.sportId ?? item.metadata?.skillType)
     const skillKey = item.metadata?.skillName?.trim() || 'Utan vald teknik'
 
     if (!acc[typeKey]) {

@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import UploadButton from '../components/UploadButton.tsx'
 import AppNav from '../components/AppNav.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
-import { skills } from '../utils/skills.ts'
+import { findSkill, findSkillById, skills } from '../utils/skills.ts'
 import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
 import { addImportedVideoFile } from '../services/videoLibrary.ts'
+import { DEFAULT_SPORT_ID, normalizeSportId } from '../utils/sports.ts'
 
 interface HomeProps {
   onVideoSelect: (file: File | Blob, url: string, metadata?: EmbeddedAnalysisMetadata, libraryId?: string) => void
@@ -20,31 +21,24 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
   const [importError, setImportError] = useState<string | null>(null)
 
   const sportFromRoute = searchParams.get('sport')
-  const initialSport: 'beachvolley' | 'volleyboll' =
-    sportFromRoute === 'volleyboll' || sportFromRoute === 'beachvolley'
-      ? sportFromRoute
-      : 'beachvolley'
+  const initialSport = normalizeSportId(sportFromRoute) ?? DEFAULT_SPORT_ID
 
   const routeSkillName = searchParams.get('skill')
+  const routeSkillId = searchParams.get('skillId')
   const routeSkillType = searchParams.get('skillType')
-  const initialSkill = skills.find(
-    (skill) => skill.name === routeSkillName && skill.type === routeSkillType
-  )
+  const initialSkill = findSkillById(routeSkillId) ?? findSkill(routeSkillName, routeSkillType ?? initialSport)
 
-  const [sportFilter, setSportFilter] = useState<'beachvolley' | 'volleyboll'>(
-    initialSkill?.type ?? initialSport
-  )
+  const [sportFilter, setSportFilter] = useState<string>(initialSkill?.sportId ?? initialSport)
   const [selectedSkillName, setSelectedSkillName] = useState<string>(initialSkill?.name ?? '')
   const [isHeroExpanded, setIsHeroExpanded] = useState<boolean>(!initialSkill?.name)
 
-  const handleSkillChange = (skillType: 'beachvolley' | 'volleyboll', skillName: string) => {
+  const handleSkillTypeChange = (skillType: string) => {
     setSportFilter(skillType)
+  }
+
+  const handleSkillNameChange = (skillName: string) => {
     setSelectedSkillName(skillName)
-    if (skillName) {
-      setIsHeroExpanded(false)
-    } else {
-      setIsHeroExpanded(true)
-    }
+    setIsHeroExpanded(!skillName)
   }
 
   useEffect(() => {
@@ -52,7 +46,11 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     params.set('sport', sportFilter)
 
     if (selectedSkillName) {
+      const selectedSkill = skills.find((entry) => entry.name === selectedSkillName && entry.sportId === sportFilter)
       params.set('skill', selectedSkillName)
+      if (selectedSkill) {
+        params.set('skillId', selectedSkill.id)
+      }
       params.set('skillType', sportFilter)
     }
 
@@ -70,7 +68,7 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
     libraryId?: string
   ) => {
     if (selectedSkillName) {
-      const skill = skills.find(s => s.name === selectedSkillName && s.type === sportFilter)
+      const skill = skills.find(s => s.name === selectedSkillName && s.sportId === sportFilter)
       if (skill) {
         navigate('/analyze', {
           state: { skill, videoFile: file, videoUrl: url, embeddedMetadata: metadata, libraryId }
@@ -153,8 +151,8 @@ function Home({ onVideoSelect }: HomeProps): JSX.Element {
             label="Välj teknik att öva (valfritt)"
             selectedSkillType={sportFilter}
             selectedSkillName={selectedSkillName}
-            onSkillTypeChange={(type) => handleSkillChange(type, selectedSkillName)}
-            onSkillNameChange={(name) => handleSkillChange(sportFilter, name)}
+            onSkillTypeChange={handleSkillTypeChange}
+            onSkillNameChange={handleSkillNameChange}
             allowDeselect={true}
             className="home-hero-skill-picker"
           />

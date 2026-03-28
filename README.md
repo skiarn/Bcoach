@@ -61,6 +61,30 @@ This project is configured for automatic deployment to GitHub Pages on every pus
 - React Router
 - HTML5 Canvas for drawing tools
 
+## Content Catalog (CSV)
+
+Sports and skills are stored in CSV files under `data/catalog/`:
+
+- `data/catalog/sports.csv` (language-neutral sport metadata)
+- `data/catalog/sports.sv.csv`, `data/catalog/sports.en.csv` (sport labels per language)
+- `data/catalog/skills.csv` (language-neutral skill metadata)
+- `data/catalog/skill_texts.sv.csv`, `data/catalog/skill_texts.en.csv` (skill text per language)
+
+A build step generates typed data for the app in `src/generated/catalog.ts` via:
+
+```bash
+npm run build:catalog
+```
+
+`npm run dev` and `npm run build` run this automatically.
+
+## Localization
+
+The catalog supports multiple locales (currently `sv` and `en`) with fallback to `sv`.
+
+- Set language via query param: `?lang=en`
+- Locale is persisted in browser storage (`bcoach.locale`)
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
