@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { skills } from '../utils/skills.ts'
 import UploadButton from '../components/UploadButton.tsx'
+import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 
 interface SkillPracticeProps {
 }
@@ -15,8 +16,15 @@ function SkillPractice(): JSX.Element {
     return <div>Skill not found</div>
   }
 
-  const handleVideoSelect = (file: File | Blob, url: string) => {
-    navigate('/analyze', { state: { skill, videoFile: file, videoUrl: url } })
+  const handleVideoSelect = (
+    file: File | Blob,
+    url: string,
+    metadata?: EmbeddedAnalysisMetadata,
+    libraryId?: string
+  ) => {
+    navigate('/analyze', {
+      state: { skill, videoFile: file, videoUrl: url, embeddedMetadata: metadata, libraryId }
+    })
   }
 
   return (

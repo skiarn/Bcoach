@@ -77,6 +77,44 @@ body {
   color: #617387;
 }
 
+.history-view-toggle {
+  margin-top: 14px;
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid #d9e1ea;
+  background: #eef2f7;
+}
+
+.history-view-toggle button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #34495e;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.history-view-toggle button.active {
+  background: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.history-mode-hint {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #d6e6f7;
+  border-radius: 10px;
+  background: #f3f8ff;
+  color: #35506c;
+  font-size: 0.9rem;
+}
+
 /* Home page styles */
 .home {
   text-align: center;
@@ -113,6 +151,59 @@ body {
   font-weight: 500;
   max-width: 760px;
   margin: 18px auto 30px;
+}
+
+.home-hero {
+  position: relative;
+  margin-bottom: 40px;
+  transition: all 0.3s ease;
+}
+
+.home-hero.collapsed {
+  margin-bottom: 20px;
+}
+
+.home-hero-kicker-btn {
+  background: none;
+  border: none;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: center;
+  display: block;
+  margin: 0 auto 16px;
+}
+
+.home-hero-kicker-btn:hover {
+  opacity: 0.8;
+}
+
+.home-hero-kicker-btn:active {
+  transform: scale(0.98);
+}
+
+.hero-content {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.hero-content.visible {
+  opacity: 1;
+  max-height: 800px;
+}
+
+.hero-content.hidden {
+  opacity: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.home-hero-skill-picker {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e8f0;
 }
 
 .nav-links {
@@ -215,24 +306,6 @@ body {
   margin: 30px 0;
 }
 
-.upload-button-label {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.2s;
-  display: inline-block;
-  text-align: center;
-  text-decoration: none;
-}
-
-.upload-button-label:hover {
-  background-color: #0056b3;
-}
-
 .upload-button input[type="file"] {
   display: none;
 }
@@ -279,11 +352,13 @@ body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 20px;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 12px 24px;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 14px 24px;
   border-radius: 999px;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  max-width: 90%;
 }
 
 .recording-indicator {
@@ -299,20 +374,207 @@ body {
   50% { opacity: 0.3; }
 }
 
-.recording-stop-btn {
-  background: #dc3545;
+.camera-ctrl-btn {
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  border: none;
-  padding: 10px 22px;
-  border-radius: 999px;
-  font-size: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+}
+
+.camera-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.camera-ctrl-btn:active {
+  transform: scale(0.95);
+}
+
+.recording-start-btn {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 9px 13px;
+  border-radius: 6px;
+  font-size: 1.2rem;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.15s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+}
+
+.recording-start-btn:hover {
+  background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+  box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+  transform: translateY(-2px);
+}
+
+.recording-start-btn:active {
+  transform: scale(0.95);
+}
+
+.recording-cancel-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 9px 11px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+}
+
+.recording-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.recording-cancel-btn:active {
+  transform: scale(0.95);
+}
+
+.recording-stop-btn {
+  background: linear-gradient(135deg, #dc3545 0%, #ff6b6b 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
 }
 
 .recording-stop-btn:hover {
-  background: #b02a37;
+  background: linear-gradient(135deg, #c82333 0%, #ee5a52 100%);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+  transform: translateY(-2px);
+}
+
+.recording-stop-btn:active {
+  transform: scale(0.95);
+}
+
+.recording-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.recording-countdown-number {
+  font-size: 22vmin;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 4px 32px rgba(0, 0, 0, 0.7);
+  line-height: 1;
+  animation: countdown-pulse 1s ease-out forwards;
+}
+
+@keyframes countdown-pulse {
+  0%   { transform: scale(1.4); opacity: 0.6; }
+  40%  { transform: scale(1);   opacity: 1;   }
+  85%  { transform: scale(0.92); opacity: 1;  }
+  100% { transform: scale(0.85); opacity: 0.5; }
+}
+
+.recording-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recording-settings-group {
+  display: flex;
+  align-items: center;
+}
+
+.recording-delay-select {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: auto;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23fff' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.recording-delay-select:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.recording-delay-select:focus {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.recording-delay-select option {
+  background: #16213e;
+  color: #fff;
+  padding: 8px;
+}
+
+.recording-converting-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.recording-converting-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Analyze page styles */
@@ -739,6 +1001,171 @@ body {
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.history-content-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.history-main-panel {
+  min-width: 0;
+}
+
+.history-sidebar {
+  border: 1px solid #dfe5ec;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  max-height: 75vh;
+}
+
+.history-sidebar-header {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid #edf2f7;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.history-sidebar-header h3 {
+  margin: 4px 0;
+  color: #0f172a;
+}
+
+.history-sidebar-label {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.history-sidebar-meta {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #475569;
+}
+
+.history-skill-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 14px;
+  border-bottom: 1px solid #edf2f7;
+  background: #fcfdff;
+}
+
+.history-skill-tab {
+  border: 1px solid #dbe4ef;
+  background: #fff;
+  color: #334155;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 120px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  display: grid;
+  gap: 3px;
+}
+
+.history-skill-tab:hover {
+  border-color: #b8d9ff;
+  background: #f4f9ff;
+}
+
+.history-skill-tab.active {
+  border-color: #007bff;
+  background: #eaf4ff;
+  box-shadow: inset 0 0 0 1px rgba(0, 123, 255, 0.08);
+}
+
+.history-skill-tab__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.history-skill-tab__meta {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.03em;
+}
+
+.history-sidebar-list {
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  grid-auto-rows: min-content;
+}
+
+.history-sidebar-item {
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fff;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.history-sidebar-item.selected {
+  border-color: #8ec4ff;
+  background: #f3f9ff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.08);
+}
+
+.history-sidebar-item__main {
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.history-sidebar-item__main strong {
+  color: #0f172a;
+}
+
+.history-sidebar-item__main p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.history-sidebar-item .history-action-btn--delete {
+  justify-self: start;
+  align-self: start;
+}
+
+@media (max-width: 960px) {
+  .history-content-layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .history-main-panel {
+    order: 1;
+  }
+
+  .history-content-layout .history-sidebar {
+    order: 2;
+    max-height: none;
+  }
+
+  .history-skill-tabs {
+    padding-bottom: 12px;
+  }
 }
 
 /* Training page styles */
