@@ -1,10 +1,12 @@
-import { Skill, skills } from '../utils/skills.ts'
+import { getSkills } from '../utils/skills.ts'
+import { getEnabledSports, normalizeSportId } from '../utils/sports.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 interface SkillPickerProps {
   label: string
-  selectedSkillType: Skill['type']
+  selectedSkillType: string
   selectedSkillName: string
-  onSkillTypeChange: (type: Skill['type']) => void
+  onSkillTypeChange: (type: string) => void
   onSkillNameChange: (name: string) => void
   allowDeselect?: boolean
   helperText?: string
@@ -21,13 +23,18 @@ function SkillPicker({
   helperText,
   className,
 }: SkillPickerProps): JSX.Element {
-  const filteredSkills = skills.filter((skill) => skill.type === selectedSkillType)
+  const { locale } = useI18n()
+  const normalizedSelectedSport = normalizeSportId(selectedSkillType) ?? selectedSkillType
+  const availableSports = getEnabledSports(locale)
+  const localizedSkills = getSkills(locale)
+  const filteredSkills = localizedSkills.filter((skill) => skill.sportId === normalizedSelectedSport)
 
-  const handleTypeChange = (nextType: Skill['type']) => {
+  const handleTypeChange = (nextType: string) => {
+    const normalizedNextType = normalizeSportId(nextType) ?? nextType
     onSkillTypeChange(nextType)
 
-    const existsInNextType = skills.some(
-      (entry) => entry.type === nextType && entry.name === selectedSkillName
+    const existsInNextType = localizedSkills.some(
+      (entry) => entry.sportId === normalizedNextType && entry.name === selectedSkillName
     )
 
     if (!existsInNextType) {
@@ -41,20 +48,16 @@ function SkillPicker({
       {helperText ? <p style={{ margin: '0 0 12px', color: '#617387', fontSize: '0.92rem' }}>{helperText}</p> : null}
 
       <div className="home-sport-toggle">
-        <button
-          type="button"
-          className={selectedSkillType === 'beachvolley' ? 'active' : ''}
-          onClick={() => handleTypeChange('beachvolley')}
-        >
-          Beachvolley
-        </button>
-        <button
-          type="button"
-          className={selectedSkillType === 'volleyboll' ? 'active' : ''}
-          onClick={() => handleTypeChange('volleyboll')}
-        >
-          Volleyboll
-        </button>
+        {availableSports.map((sport) => (
+          <button
+            key={sport.id}
+            type="button"
+            className={normalizedSelectedSport === sport.id ? 'active' : ''}
+            onClick={() => handleTypeChange(sport.id)}
+          >
+            {sport.label}
+          </button>
+        ))}
       </div>
 
       <div className="home-skill-grid">

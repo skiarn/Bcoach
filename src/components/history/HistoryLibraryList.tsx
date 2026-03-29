@@ -1,4 +1,5 @@
 import { VideoLibraryListItem } from '../../services/videoLibrary.ts'
+import { useI18n } from '../../i18n/I18nProvider.tsx'
 
 interface HistoryLibraryListProps {
   items: VideoLibraryListItem[]
@@ -19,12 +20,14 @@ function HistoryLibraryList({
   formatDate,
   formatBytes,
 }: HistoryLibraryListProps): JSX.Element {
+  const { t } = useI18n()
+
   return (
     <aside style={{ border: '1px solid #ddd', borderRadius: '10px', padding: '10px', maxHeight: '75vh', overflowY: 'auto' }}>
       {isLoading ? (
-        <p>Laddar...</p>
+        <p>{t('history.groups.loading')}</p>
       ) : items.length === 0 ? (
-        <p>Inga videor indexerade ännu.</p>
+        <p>{t('history.groups.empty')}</p>
       ) : (
         items.map((item) => (
           <div
@@ -43,13 +46,15 @@ function HistoryLibraryList({
               style={{ border: 'none', background: 'transparent', textAlign: 'left', width: '100%', cursor: 'pointer' }}
             >
               <strong>{item.name}</strong>
-              <p style={{ margin: '6px 0' }}>{item.source === 'exported' ? 'Exporterad' : 'Importerad'}</p>
+              <p style={{ margin: '6px 0' }}>{item.source === 'exported' ? t('history.groups.exported') : t('history.groups.imported')}</p>
               <p style={{ margin: '6px 0' }}>{formatDate(item.createdAt)}</p>
               <p style={{ margin: '6px 0' }}>{formatBytes(item.size)}</p>
-              <p style={{ margin: '6px 0', color: '#555' }}>Metadata: {item.metadata ? 'Ja' : 'Nej'}</p>
+              <p style={{ margin: '6px 0', color: '#555' }}>
+                {t('history.groups.metadata', { value: item.metadata ? t('history.groups.yes') : t('history.groups.no') })}
+              </p>
             </button>
             <button type="button" onClick={() => onDelete(item.id)} className="history-action-btn history-action-btn--delete">
-              Ta bort
+              {t('history.groups.delete')}
             </button>
           </div>
         ))

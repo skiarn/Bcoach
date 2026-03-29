@@ -7,7 +7,7 @@
 
 ## 2. Skill Picker (delad komponent)
 - Gemensam komponent i Home och Analyze
-- Välj sport (Beachvolley / Volleyboll) och teknik
+- Välj sport (Beachvolley / Volleyboll / Tennis-pilot) och teknik
 - Analyze steg 3 visar endast picker om teknik saknas
 
 ## 3. Analyze Wizard
@@ -53,3 +53,9 @@
 ## 10. Träning (Training)
 - Teknikkatalog per sport
 - SkillPractice-flöde med förifylld teknik in i Analyze
+
+## 11. CSV-katalog + språkstöd
+- Sporter och tekniker lagras i CSV-filer under `data/catalog/`
+- Språkdata ligger i separata filer per språk (`sports.<lang>.csv`, `skill_texts.<lang>.csv`)
+- Katalogen byggs till typed data i `src/generated/catalog.ts`
+- Stöd för flera språk i tekniktexter (idag `sv` + `en`) med fallback till `sv`

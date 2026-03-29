@@ -4,6 +4,7 @@ import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
 import { addImportedVideoFile } from '../services/videoLibrary.ts'
 import { getFfmpeg } from '../utils/ffmpegClient.ts'
+import { useI18n } from '../i18n/I18nProvider.tsx'
 
 interface UploadButtonProps {
   onVideoSelect: (video: File | Blob, url: string, metadata?: EmbeddedAnalysisMetadata, libraryId?: string) => void
@@ -12,6 +13,7 @@ interface UploadButtonProps {
 type CameraPhase = 'idle' | 'preview' | 'recording' | 'converting'
 
 function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
+  const { t } = useI18n()
   const [cameraPhase, setCameraPhase] = useState<CameraPhase>('idle')
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [isLandscape, setIsLandscape] = useState(false)
@@ -62,7 +64,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
       return true
     } catch (error) {
       console.error('Error accessing camera:', error)
-      alert('Kunde inte komma åt kameran. Kontrollera behörigheter.')
+      alert(t('upload.cameraAccessError'))
       return false
     }
   }
@@ -243,7 +245,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
           }
         }
 
-        alert(`Importerade ${files.filter((f) => f.type.startsWith('video/')).length} video(s).`)
+        alert(t('upload.multiImportedAlert', { count: files.filter((f) => f.type.startsWith('video/')).length }))
       })()
       e.target.value = ''
       return
@@ -277,7 +279,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
           {cameraPhase === 'converting' ? (
             <div className="recording-converting-msg">
               <div className="recording-converting-spinner" />
-              <p>Konverterar till MP4…</p>
+                <p>{t('upload.converting')}</p>
             </div>
           ) : (
             <>
@@ -296,7 +298,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
 
               <div className="recording-hud">
                 {cameraPhase === 'recording' && (
-                  <span className="recording-indicator">● REC</span>
+                  <span className="recording-indicator">● {t('upload.recIndicator')}</span>
                 )}
 
                 {/* Camera controls — available in preview phase only */}
@@ -306,7 +308,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       type="button"
                       onClick={handleFlipCamera}
                       className="camera-ctrl-btn"
-                      title={facingMode === 'user' ? 'Byt till bakre kamera' : 'Byt till frontkamera'}
+                      title={facingMode === 'user' ? t('upload.flipRear') : t('upload.flipFront')}
                     >
                       🔄
                     </button>
@@ -315,7 +317,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       type="button"
                       onClick={handleToggleOrientation}
                       className="camera-ctrl-btn"
-                      title={isLandscape ? 'Byt till stående' : 'Byt till liggande'}
+                      title={isLandscape ? t('upload.orientationPortrait') : t('upload.orientationLandscape')}
                     >
                       {isLandscape ? '↕️' : '↔️'}
                     </button>
@@ -339,19 +341,19 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                           value={recordingDelay}
                           onChange={(e) => setRecordingDelay(Number(e.target.value))}
                           className="recording-delay-select"
-                          title="Inspelningsfördröjning"
+                          title={t('upload.delay.title')}
                         >
-                          <option value={0}>⏱️ Ingen</option>
-                          <option value={3}>⏱️ 3s</option>
-                          <option value={5}>⏱️ 5s</option>
-                          <option value={10}>⏱️ 10s</option>
+                          <option value={0}>⏱️ {t('upload.delay.none')}</option>
+                          <option value={3}>⏱️ {t('upload.delay.seconds', { seconds: 3 })}</option>
+                          <option value={5}>⏱️ {t('upload.delay.seconds', { seconds: 5 })}</option>
+                          <option value={10}>⏱️ {t('upload.delay.seconds', { seconds: 10 })}</option>
                         </select>
                       </div>
                       <button
                         type="button"
                         onClick={handleStartWithDelay}
                         className="recording-start-btn"
-                        title="Starta inspelning"
+                        title={t('upload.startRecording')}
                       >
                         ⏺️
                       </button>
@@ -359,7 +361,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                         type="button"
                         onClick={cancelCamera}
                         className="recording-cancel-btn"
-                        title="Avbryt"
+                        title={t('upload.cancel')}
                       >
                         ✕
                       </button>
@@ -370,7 +372,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                     type="button"
                     onClick={stopRecording}
                     className="recording-stop-btn"
-                    title="Stoppa inspelning"
+                    title={t('upload.stopRecording')}
                   >
                     ⏹️
                   </button>
@@ -396,7 +398,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
           onClick={handleOpenCamera}
           className="record-button"
         >
-          Spela in video
+          {t('upload.recordVideo')}
         </button>
       </div>
     </>

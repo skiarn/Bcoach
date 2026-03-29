@@ -35,6 +35,13 @@ body {
   letter-spacing: 0.01em;
 }
 
+.app-top-nav__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .app-top-nav__links {
   display: flex;
   gap: 8px;
@@ -61,6 +68,34 @@ body {
   background: #007bff;
   color: #fff;
   border-color: #007bff;
+}
+
+.app-top-nav__lang {
+  display: inline-flex;
+  border: 1px solid #d9e1ea;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #f3f5f8;
+}
+
+.app-top-nav__lang button {
+  border: none;
+  background: transparent;
+  color: #35506c;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 7px 10px;
+  cursor: pointer;
+  min-width: 42px;
+}
+
+.app-top-nav__lang button.active {
+  background: #1f3650;
+  color: #fff;
+}
+
+.app-top-nav__lang button:hover:not(.active) {
+  background: #e8edf4;
 }
 
 .page-header {

@@ -1,9 +1,30 @@
 import { fetchFile } from '@ffmpeg/util'
 import { EmbeddedAnalysisMetadata } from '../types/analysis.ts'
 import { getFfmpeg, toSafeFileStem } from './ffmpegClient.ts'
+import { normalizeEmbeddedAnalysisMetadata } from './analysisMetadata.ts'
 
 export interface ExtractedVideoMetadata {
   metadata: EmbeddedAnalysisMetadata
+}
+
+function fileDataToUint8Array(fileData: unknown): Uint8Array {
+  if (fileData instanceof Uint8Array) {
+    return fileData
+  }
+
+  if (typeof fileData === 'string') {
+    return new TextEncoder().encode(fileData)
+  }
+
+  if (fileData instanceof ArrayBuffer) {
+    return new Uint8Array(fileData)
+  }
+
+  if (ArrayBuffer.isView(fileData)) {
+    return new Uint8Array(fileData.buffer, fileData.byteOffset, fileData.byteLength)
+  }
+
+  return new Uint8Array()
 }
 
 function isValidMetadata(value: unknown): value is EmbeddedAnalysisMetadata {
@@ -11,7 +32,7 @@ function isValidMetadata(value: unknown): value is EmbeddedAnalysisMetadata {
 
   const candidate = value as Partial<EmbeddedAnalysisMetadata>
   return (
-    candidate.schemaVersion === 1 &&
+    (candidate.schemaVersion === 1 || candidate.schemaVersion === 2) &&
     Array.isArray(candidate.feedback) &&
     Array.isArray(candidate.nextSteps) &&
     Array.isArray(candidate.shapes)
@@ -89,7 +110,7 @@ export async function appendMetadataToVideo(
   }
 
   console.log('[Metadata] Reading output file...')
-  const outputData = await ffmpeg.readFile(outputName)
+  const outputData = fileDataToUint8Array(await ffmpeg.readFile(outputName))
   console.log('[Metadata] Output file read:', outputData.length, 'bytes')
 
   console.log('[Metadata] Cleaning up temp files...')
@@ -125,7 +146,7 @@ export async function extractMetadataFromVideo(
     return null
   }
 
-  const metadataData = await ffmpeg.readFile(metadataName)
+  const metadataData = fileDataToUint8Array(await ffmpeg.readFile(metadataName))
   const metadataText = new TextDecoder().decode(metadataData)
 
   await Promise.all([
@@ -159,8 +180,13 @@ export async function extractMetadataFromVideo(
     return null
   }
 
+  const normalized = normalizeEmbeddedAnalysisMetadata(parsed)
+  if (!normalized) {
+    return null
+  }
+
   return {
-    metadata: parsed,
+    metadata: normalized,
   }
 }
 
