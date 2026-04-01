@@ -13,7 +13,7 @@ import { getVideoDisplayName } from '../utils/helpers.ts'
 import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
 import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
 import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
-import { DEFAULT_SPORT_ID } from '../utils/sports.ts'
+import { DEFAULT_SPORT_ID, getSportLabel } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
 import { applyVideoEdits } from '../utils/videoEditExport.ts'
@@ -143,11 +143,6 @@ function Analyze({
     ? videoFile.name
     : (location.state?.videoName || existingAnalysis?.videoName)
 
-  const videoName = useMemo(
-    () => getVideoDisplayName(rawVideoName, existingAnalysis?.timestamp),
-    [rawVideoName, existingAnalysis?.timestamp]
-  )
-
   useEffect(() => {
     if (!derivedSkill) {
       return
@@ -165,6 +160,21 @@ function Analyze({
   const skill = useMemo(
     () => availableSkills.find((entry) => entry.name === selectedSkillName),
     [availableSkills, selectedSkillName]
+  )
+
+  const sportLabel = useMemo(
+    () => (skill?.sportId ? getSportLabel(skill.sportId, locale) : undefined),
+    [skill?.sportId, locale]
+  )
+
+  const videoName = useMemo(
+    () => getVideoDisplayName(rawVideoName, {
+      timestamp: existingAnalysis?.timestamp,
+      sportLabel,
+      skillName: skill?.name,
+      locale,
+    }),
+    [rawVideoName, existingAnalysis?.timestamp, sportLabel, skill?.name, locale]
   )
 
   useEffect(() => {
@@ -477,7 +487,11 @@ function Analyze({
       const sourceBlob = await getSourceVideoBlob()
       console.log('[Export] Source blob loaded:', sourceBlob.size, 'bytes')
 
-      const fileName = buildAnalyzedVideoFileName(videoName)
+      const fileName = buildAnalyzedVideoFileName(rawVideoName || videoName, {
+        timestamp: existingAnalysis?.timestamp,
+        sportLabel,
+        skillName: skill?.name,
+      })
       console.log('[Export] Attaching metadata with ffmpeg...')
 
       const packagedBlob = await appendMetadataToVideo(sourceBlob, metadata, fileName)
