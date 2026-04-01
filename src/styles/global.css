@@ -1391,6 +1391,38 @@ body {
   border-color: #1e7e34 !important;
 }
 
+.analyze-inline-btn {
+  border: 1px solid #ced4da;
+  background: #f8f9fa;
+  color: #2c3e50;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.analyze-inline-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.analyze-inline-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.analyze-inline-btn--apply {
+  border-color: #28a745;
+  background: #28a745;
+  color: #fff;
+}
+
+.analyze-inline-btn--apply:hover:not(:disabled) {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
 .analysis-saved-panel {
   background: #f3fff7;
   border: 1px solid #bdeccc;

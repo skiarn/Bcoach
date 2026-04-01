@@ -47,6 +47,7 @@ function App(): JSX.Element {
                 <Analyze
                   videoUrl={selectedVideo.url}
                   videoFile={selectedVideo.file}
+                  libraryId={selectedVideo.libraryId}
                   embeddedMetadata={selectedVideo.metadata}
                   onBack={handleBackToHome}
                 />

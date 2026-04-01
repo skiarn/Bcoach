@@ -7,6 +7,7 @@ import Controls from '../components/Controls.tsx'
 import FeedbackPanel from '../components/FeedbackPanel.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
 import AppNav from '../components/AppNav.tsx'
+import EditTimeline from '../components/EditTimeline.tsx'
 import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
 import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
@@ -14,6 +15,8 @@ import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/vide
 import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
 import { DEFAULT_SPORT_ID } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
+import { useVideoSegments } from '../hooks/useVideoSegments.ts'
+import { applyVideoEdits } from '../utils/videoEditExport.ts'
 
 interface VideoAnalysis {
   id: string
@@ -32,6 +35,7 @@ interface VideoAnalysis {
 interface AnalyzeProps {
   videoUrl?: string
   videoFile?: File | Blob
+  libraryId?: string
   embeddedMetadata?: EmbeddedAnalysisMetadata
   onBack: () => void
 }
@@ -42,6 +46,7 @@ type AnalyzeStep = 'draw' | 'feedback' | 'nextSteps' | 'save'
 function Analyze({
   videoUrl: propVideoUrl,
   videoFile: propVideoFile,
+  libraryId: propLibraryId,
   embeddedMetadata: propEmbeddedMetadata,
   onBack,
 }: AnalyzeProps): JSX.Element {
@@ -51,6 +56,8 @@ function Analyze({
   const stateSkill: Skill | undefined = location.state?.skill
   const existingAnalysis = location.state?.analysis as VideoAnalysis | undefined
   const routeEmbeddedMetadata = location.state?.embeddedMetadata as EmbeddedAnalysisMetadata | undefined
+  const routeLibraryId = location.state?.libraryId as string | undefined
+  const libraryId = propLibraryId ?? routeLibraryId
   const embeddedMetadata = propEmbeddedMetadata ?? routeEmbeddedMetadata
   const metadataSkill = useMemo(
     () => findSkillById(embeddedMetadata?.skillId, locale) ?? findSkill(embeddedMetadata?.skillName, embeddedMetadata?.sportId ?? embeddedMetadata?.skillType, locale),
@@ -64,12 +71,25 @@ function Analyze({
   const videoUrl = propVideoUrl || location.state?.videoUrl
   const videoFile = propVideoFile || location.state?.videoFile
 
-  // Create a stable blob URL from videoFile if videoUrl is not reliable
+  // Keep a mutable working blob so edits can be applied before overlays/feedback/export.
+  const [workingVideoBlob, setWorkingVideoBlob] = useState<Blob | null>(
+    videoFile instanceof Blob ? videoFile : null
+  )
   const [stableVideoUrl, setStableVideoUrl] = useState<string>('')
+  const [isApplyingEdits, setIsApplyingEdits] = useState(false)
+  const [editProgress, setEditProgress] = useState(0)
+  const [editError, setEditError] = useState<string | null>(null)
+  const { segments, addSegment, updateSegment, removeSegment, clearSegments } = useVideoSegments()
 
   useEffect(() => {
-    if (videoFile && videoFile instanceof Blob) {
-      const blobUrl = URL.createObjectURL(videoFile)
+    if (videoFile instanceof Blob) {
+      setWorkingVideoBlob(videoFile)
+    }
+  }, [videoFile])
+
+  useEffect(() => {
+    if (workingVideoBlob) {
+      const blobUrl = URL.createObjectURL(workingVideoBlob)
       setStableVideoUrl(blobUrl)
       return () => {
         URL.revokeObjectURL(blobUrl)
@@ -79,7 +99,7 @@ function Analyze({
     if (videoUrl) {
       setStableVideoUrl(videoUrl)
     }
-  }, [videoFile, videoUrl])
+  }, [workingVideoBlob, videoUrl])
 
   const effectiveVideoUrl = stableVideoUrl || videoUrl
 
@@ -401,6 +421,10 @@ function Analyze({
   }
 
   const getSourceVideoBlob = async (): Promise<Blob> => {
+    if (workingVideoBlob instanceof Blob) {
+      return workingVideoBlob
+    }
+
     if (videoFile instanceof Blob) {
       return videoFile
     }
@@ -488,7 +512,7 @@ function Analyze({
   };
 
   const saveAnalysisToLibrary = async (nextShapes: Shape[]) => {
-    if (!location.state?.libraryId) {
+    if (!libraryId) {
       setSaveError(t('analyze.error.missingVideoId'))
       return
     }
@@ -496,7 +520,6 @@ function Analyze({
     setSaveError(null)
 
     try {
-      const libraryId = location.state.libraryId as string
       const record = await getVideoLibraryRecord(libraryId)
       if (!record) {
         setSaveError(t('analyze.error.videoMissing'))
@@ -525,7 +548,15 @@ function Analyze({
       }
 
       console.log('[LibrarySave] Updating library record with metadata...')
-      const updatedRecord = {...record, metadata}
+      const updatedBlob = workingVideoBlob ?? record.blob
+      const updatedRecord = {
+        ...record,
+        metadata,
+        blob: updatedBlob,
+        size: updatedBlob.size,
+        mimeType: updatedBlob.type || record.mimeType,
+        lastModified: Date.now(),
+      }
       await upsertVideoRecord(updatedRecord)
       console.log('[LibrarySave] Library record updated successfully')
 
@@ -540,6 +571,44 @@ function Analyze({
   const saveAnalysis = () => {
     void handleSaveAnalysis(shapes)
   };
+
+  const applySegmentEdits = async () => {
+    if (segments.length === 0) {
+      setEditError(t('editor.error.noSegments'))
+      return
+    }
+
+    setEditError(null)
+    setIsApplyingEdits(true)
+    setEditProgress(0)
+
+    try {
+      const sourceBlob = await getSourceVideoBlob()
+      const editedBlob = await applyVideoEdits(
+        sourceBlob,
+        videoName || 'video.mp4',
+        segments,
+        duration,
+        setEditProgress
+      )
+
+      if (videoRef.current) {
+        videoRef.current.pause()
+      }
+
+      setWorkingVideoBlob(editedBlob)
+      setIsPlaying(false)
+      setCurrentTime(0)
+      setDuration(0)
+      setVideoLoaded(false)
+      clearSegments()
+    } catch {
+      setEditError(t('editor.error.exportFailed'))
+    } finally {
+      setIsApplyingEdits(false)
+      setEditProgress(0)
+    }
+  }
 
   const quickSaveAnalysis = () => {
     void saveAnalysisToLibrary(shapes)
@@ -674,6 +743,49 @@ function Analyze({
               <button onClick={() => setTool("none")}>{t('analyze.tool.none')}</button>
               <button onClick={undoLastShape}>{t('analyze.tool.undo')}</button>
               <button onClick={clearCanvas}>{t('analyze.tool.clear')}</button>
+            </div>
+          )}
+
+          {videoLoaded && duration > 0 && (
+            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
+              <h3>{t('analyze.edit.title')}</h3>
+              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+
+              <EditTimeline
+                duration={duration}
+                currentTime={currentTime}
+                segments={segments}
+                onAddSegment={addSegment}
+                onUpdateSegment={updateSegment}
+                onRemoveSegment={removeSegment}
+                onSeek={handleSeek}
+              />
+
+              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="analyze-inline-btn analyze-inline-btn--apply"
+                  onClick={() => void applySegmentEdits()}
+                  disabled={segments.length === 0 || isApplyingEdits}
+                >
+                  {isApplyingEdits
+                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
+                    : t('analyze.edit.apply')}
+                </button>
+
+                <button
+                  type="button"
+                  className="analyze-inline-btn"
+                  onClick={clearSegments}
+                  disabled={segments.length === 0 || isApplyingEdits}
+                >
+                  {t('editor.clearSegments')}
+                </button>
+              </div>
+
+              {editError && (
+                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
+              )}
             </div>
           )}
 
