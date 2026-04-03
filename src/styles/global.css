@@ -1654,6 +1654,32 @@ body {
     width: 100% !important;
     margin-top: 20px;
   }
+
+  .hero-content {
+    overflow: visible;
+  }
+
+  .hero-content.visible {
+    max-height: none;
+  }
+
+  .hero-content.hidden {
+    overflow: hidden;
+  }
+
+  .home-skill-picker {
+    padding: 16px;
+  }
+
+  .home-sport-toggle {
+    flex-wrap: wrap;
+  }
+
+  .home-sport-toggle button {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 120px;
+    text-align: center;
+  }
 }
 
 /* Skill practice page styles */
