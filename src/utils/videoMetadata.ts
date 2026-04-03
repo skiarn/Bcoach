@@ -7,6 +7,12 @@ export interface ExtractedVideoMetadata {
   metadata: EmbeddedAnalysisMetadata
 }
 
+interface AnalyzedFileNameOptions {
+  timestamp?: number
+  sportLabel?: string
+  skillName?: string
+}
+
 function fileDataToUint8Array(fileData: unknown): Uint8Array {
   if (fileData instanceof Uint8Array) {
     return fileData
@@ -64,6 +70,32 @@ function getExtension(fileName: string): string {
   }
 
   return fileName.slice(lastDotIndex)
+}
+
+function extractRecordingTimestamp(fileName: string): number | undefined {
+  const match = fileName.match(/recording-(\d{10,})/i)
+  if (!match) return undefined
+  const parsed = Number(match[1])
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function sanitizeToken(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function formatFileDate(timestamp: number): string {
+  const date = new Date(timestamp)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${y}${m}${d}-${hh}${mm}`
 }
 
 export async function appendMetadataToVideo(
@@ -190,7 +222,7 @@ export async function extractMetadataFromVideo(
   }
 }
 
-export function buildAnalyzedVideoFileName(baseName: string): string {
+export function buildAnalyzedVideoFileName(baseName: string, options?: AnalyzedFileNameOptions): string {
   const trimmed = baseName.trim()
   const fallback = 'analysis.webm'
 
@@ -200,12 +232,28 @@ export function buildAnalyzedVideoFileName(baseName: string): string {
 
   const lastDotIndex = trimmed.lastIndexOf('.')
   const hasExtension = lastDotIndex > 0 && lastDotIndex < trimmed.length - 1
+  const extension = hasExtension ? trimmed.slice(lastDotIndex) : '.webm'
+
+  const recordingTimestamp = extractRecordingTimestamp(trimmed)
+  const hasContext = Boolean(options?.sportLabel?.trim() || options?.skillName?.trim())
+
+  if (recordingTimestamp || hasContext) {
+    const safeTimestamp = recordingTimestamp ?? options?.timestamp ?? Date.now()
+    const parts: string[] = ['analysis', formatFileDate(safeTimestamp)]
+
+    const sportToken = options?.sportLabel ? sanitizeToken(options.sportLabel) : ''
+    const skillToken = options?.skillName ? sanitizeToken(options.skillName) : ''
+
+    if (sportToken) parts.push(sportToken)
+    if (skillToken) parts.push(skillToken)
+
+    return `${parts.join('-')}${extension}`
+  }
 
   if (!hasExtension) {
     return `${trimmed}-analysis.webm`
   }
 
   const name = trimmed.slice(0, lastDotIndex)
-  const extension = trimmed.slice(lastDotIndex)
   return `${name}-analysis${extension}`
 }

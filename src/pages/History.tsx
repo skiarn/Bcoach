@@ -203,6 +203,11 @@ function History(): JSX.Element {
     })
   }
 
+  const handleOpenInEditor = () => {
+    if (!selectedRecord) return
+    navigate(`/edit/${selectedRecord.id}`)
+  }
+
   const handleDelete = async (id: string) => {
     await deleteVideoLibraryRecord(id)
     if (selectedId === id) {
@@ -332,9 +337,12 @@ function History(): JSX.Element {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button type="button" className="history-action-btn history-action-btn--edit" onClick={handleOpenInAnalyze}>
                       {t('history.openAnalyze')}
+                    </button>
+                    <button type="button" className="history-action-btn history-action-btn--editor" onClick={handleOpenInEditor}>
+                      {t('history.openEditor')}
                     </button>
                   </div>
 

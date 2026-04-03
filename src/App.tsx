@@ -5,6 +5,7 @@ import Analyze from './pages/Analyze.tsx'
 import History from './pages/History.tsx'
 import Training from './pages/Training.tsx'
 import SkillPractice from './pages/SkillPractice.tsx'
+import VideoEditor from './pages/VideoEditor.tsx'
 import { EmbeddedAnalysisMetadata } from './types/analysis.ts'
 
 function App(): JSX.Element {
@@ -46,6 +47,7 @@ function App(): JSX.Element {
                 <Analyze
                   videoUrl={selectedVideo.url}
                   videoFile={selectedVideo.file}
+                  libraryId={selectedVideo.libraryId}
                   embeddedMetadata={selectedVideo.metadata}
                   onBack={handleBackToHome}
                 />
@@ -56,6 +58,7 @@ function App(): JSX.Element {
           />
           <Route path="/analyze" element={<Analyze onBack={() => window.history.back()} />} />
           <Route path="/history" element={<History />} />
+          <Route path="/edit/:videoId" element={<VideoEditor />} />
           <Route path="/training" element={<Training />} />
           <Route path="/practice/:paramA/:paramB" element={<SkillPractice />} />
         </Routes>
