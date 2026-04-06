@@ -4,10 +4,12 @@ import VideoPlayer from '../components/VideoPlayer.tsx'
 import DrawingCanvas from '../components/DrawingCanvas.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
 import Controls from '../components/Controls.tsx'
-import FeedbackPanel from '../components/FeedbackPanel.tsx'
-import SkillPicker from '../components/SkillPicker.tsx'
 import AppNav from '../components/AppNav.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
+import DrawStepPanel from '../components/analyzeSteps/DrawStepPanel.tsx'
+import FeedbackStepPanel from '../components/analyzeSteps/FeedbackStepPanel.tsx'
+import NextStepsStepPanel from '../components/analyzeSteps/NextStepsStepPanel.tsx'
+import SaveStepPanel from '../components/analyzeSteps/SaveStepPanel.tsx'
 import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
 import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
@@ -17,6 +19,7 @@ import { DEFAULT_SPORT_ID, getSportLabel } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
 import { applyVideoEdits } from '../utils/videoEditExport.ts'
+import { ANALYZE_STEP_ORDER, AnalyzeStep, getAnalyzeStepTitleKey } from './analyze/steps.ts'
 
 interface VideoAnalysis {
   id: string
@@ -38,10 +41,10 @@ interface AnalyzeProps {
   libraryId?: string
   embeddedMetadata?: EmbeddedAnalysisMetadata
   onBack: () => void
+  onNavigateHome?: () => void
 }
 
 type Tool = "line" | "circle" | "none";
-type AnalyzeStep = 'draw' | 'feedback' | 'nextSteps' | 'save'
 
 function Analyze({
   videoUrl: propVideoUrl,
@@ -49,6 +52,7 @@ function Analyze({
   libraryId: propLibraryId,
   embeddedMetadata: propEmbeddedMetadata,
   onBack,
+  onNavigateHome,
 }: AnalyzeProps): JSX.Element {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
@@ -628,7 +632,7 @@ function Analyze({
     void saveAnalysisToLibrary(shapes)
   };
 
-  const stepOrder: AnalyzeStep[] = ['draw', 'feedback', 'nextSteps', 'save']
+  const stepOrder = ANALYZE_STEP_ORDER
   const stepIndex = stepOrder.indexOf(currentStep)
   const showVideoWorkspace = currentStep === 'draw'
 
@@ -643,10 +647,7 @@ function Analyze({
   }
 
   const getStepTitle = () => {
-    if (currentStep === 'draw') return t('analyze.stepTitle.draw')
-    if (currentStep === 'feedback') return t('analyze.stepTitle.feedback')
-    if (currentStep === 'nextSteps') return t('analyze.stepTitle.nextSteps')
-    return t('analyze.stepTitle.save')
+    return t(getAnalyzeStepTitleKey(currentStep))
   }
 
   const getHomeSelectionSearch = (): string => {
@@ -659,6 +660,18 @@ function Analyze({
     params.set('skillType', skill.sportId)
     return params.toString()
   }
+
+  const handleNavigateToHome = () => {
+    onNavigateHome?.()
+    const search = getHomeSelectionSearch()
+    navigate({
+      pathname: '/',
+      search: search ? `?${search}` : '',
+    })
+  }
+
+  const initialFeedbackValues = customFeedback.length > 0 ? customFeedback : (existingAnalysis?.feedback ?? embeddedMetadata?.feedback ?? [])
+  const initialNextStepValues = customNextSteps.length > 0 ? customNextSteps : (existingAnalysis?.nextSteps ?? embeddedMetadata?.nextSteps ?? [])
 
   return (
     <div className="analyze">
@@ -759,51 +772,7 @@ function Analyze({
               <button onClick={clearCanvas}>{t('analyze.tool.clear')}</button>
             </div>
           )}
-
-          {videoLoaded && duration > 0 && (
-            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
-              <h3>{t('analyze.edit.title')}</h3>
-              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
-
-              <EditTimeline
-                duration={duration}
-                currentTime={currentTime}
-                segments={segments}
-                onAddSegment={addSegment}
-                onUpdateSegment={updateSegment}
-                onRemoveSegment={removeSegment}
-                onSeek={handleSeek}
-              />
-
-              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="analyze-inline-btn analyze-inline-btn--apply"
-                  onClick={() => void applySegmentEdits()}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {isApplyingEdits
-                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
-                    : t('analyze.edit.apply')}
-                </button>
-
-                <button
-                  type="button"
-                  className="analyze-inline-btn"
-                  onClick={clearSegments}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {t('editor.clearSegments')}
-                </button>
-              </div>
-
-              {editError && (
-                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
-              )}
-            </div>
-          )}
-
-          {showDrawingCanvas && shapes.length > 0 && (
+                    {showDrawingCanvas && shapes.length > 0 && (
             <div className="shape-timeline-editor">
               <h3>{t('analyze.timeline.title')}</h3>
 
@@ -851,6 +820,49 @@ function Analyze({
               )}
             </div>
           )}
+
+          {videoLoaded && duration > 0 && (
+            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
+              <h3>{t('analyze.edit.title')}</h3>
+              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+
+              <EditTimeline
+                duration={duration}
+                currentTime={currentTime}
+                segments={segments}
+                onAddSegment={addSegment}
+                onUpdateSegment={updateSegment}
+                onRemoveSegment={removeSegment}
+                onSeek={handleSeek}
+              />
+
+              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="analyze-inline-btn analyze-inline-btn--apply"
+                  onClick={() => void applySegmentEdits()}
+                  disabled={segments.length === 0 || isApplyingEdits}
+                >
+                  {isApplyingEdits
+                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
+                    : t('analyze.edit.apply')}
+                </button>
+
+                <button
+                  type="button"
+                  className="analyze-inline-btn"
+                  onClick={clearSegments}
+                  disabled={segments.length === 0 || isApplyingEdits}
+                >
+                  {t('editor.clearSegments')}
+                </button>
+              </div>
+
+              {editError && (
+                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
+              )}
+            </div>
+          )}
           </div>
         )}
 
@@ -860,83 +872,51 @@ function Analyze({
             {currentStep !== 'draw' && <h3>{getStepTitle()}</h3>}
 
             {currentStep === 'draw' && (
-              <div>
-                <p>
-                  {t('analyze.draw.help')}
-                </p>
-                <p style={{ color: '#555', fontSize: '0.9rem' }}>
-                  {t('analyze.draw.tip')}
-                </p>
-                <h3 style={{ marginTop: '14px' }}>{getStepTitle()}</h3>
-              </div>
+              <DrawStepPanel
+                title={getStepTitle()}
+                help={t('analyze.draw.help')}
+                tip={t('analyze.draw.tip')}
+              />
             )}
 
             {currentStep === 'feedback' && (
-              <FeedbackPanel
+              <FeedbackStepPanel
                 skill={skill}
-                mode="feedback"
-                initialFeedback={existingAnalysis?.feedback || customFeedback}
-                initialNextSteps={existingAnalysis?.nextSteps || customNextSteps}
+                initialFeedback={initialFeedbackValues}
+                initialNextSteps={initialNextStepValues}
                 onFeedbackChange={setCustomFeedback}
                 onNextStepsChange={setCustomNextSteps}
               />
             )}
 
             {currentStep === 'nextSteps' && (
-              <div>
-                {!skill && (
-                  <SkillPicker
-                    label={t('analyze.nextSteps.skillLabel')}
-                    selectedSkillType={selectedSkillType}
-                    selectedSkillName={selectedSkillName}
-                    onSkillTypeChange={setSelectedSkillType}
-                    onSkillNameChange={setSelectedSkillName}
-                    allowDeselect={true}
-                    className="home-skill-picker"
-                  />
-                )}
-
-                <FeedbackPanel
-                  skill={skill}
-                  mode="nextSteps"
-                  initialFeedback={existingAnalysis?.feedback || customFeedback}
-                  initialNextSteps={existingAnalysis?.nextSteps || customNextSteps}
-                  onFeedbackChange={setCustomFeedback}
-                  onNextStepsChange={setCustomNextSteps}
-                />
-              </div>
+              <NextStepsStepPanel
+                skill={skill}
+                skillLabel={t('analyze.nextSteps.skillLabel')}
+                selectedSkillType={selectedSkillType}
+                selectedSkillName={selectedSkillName}
+                initialFeedback={initialFeedbackValues}
+                initialNextSteps={initialNextStepValues}
+                onSkillTypeChange={setSelectedSkillType}
+                onSkillNameChange={setSelectedSkillName}
+                onFeedbackChange={setCustomFeedback}
+                onNextStepsChange={setCustomNextSteps}
+              />
             )}
 
             {currentStep === 'save' && (
-              <div>
-                {!isSaved ? (
-                  <>
-                    <p>{t('analyze.save.ready')}</p>
-                    <ul style={{ margin: '10px 0 0 18px' }}>
-                      <li>{t('analyze.save.feedbackPoints', { count: customFeedback.length })}</li>
-                      <li>{t('analyze.save.nextSteps', { count: customNextSteps.length })}</li>
-                    </ul>
-                    <p style={{ marginTop: '10px', color: '#555' }}>
-                      {t('analyze.save.help')}
-                    </p>
-                    {saveError && (
-                      <p style={{ marginTop: '8px', color: '#c62828' }}>
-                        {saveError}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="analysis-saved-panel">
-                    <h4>{t('analyze.saved.title')}</h4>
-                    <p>{t('analyze.saved.body')}</p>
-                    <div className="analysis-saved-actions">
-                      <button type="button" onClick={() => navigate(`/${getHomeSelectionSearch() ? `?${getHomeSelectionSearch()}` : ''}`)}>
-                        {t('analyze.saved.cta')}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <SaveStepPanel
+                isSaved={isSaved}
+                saveError={saveError}
+                feedbackCountLabel={t('analyze.save.feedbackPoints', { count: customFeedback.length })}
+                nextStepsCountLabel={t('analyze.save.nextSteps', { count: customNextSteps.length })}
+                readyLabel={t('analyze.save.ready')}
+                helpLabel={t('analyze.save.help')}
+                savedTitleLabel={t('analyze.saved.title')}
+                savedBodyLabel={t('analyze.saved.body')}
+                savedCtaLabel={t('analyze.saved.cta')}
+                onNavigateHome={handleNavigateToHome}
+              />
             )}
 
             <div className="analyze-step-actions">

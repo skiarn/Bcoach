@@ -50,6 +50,7 @@ function App(): JSX.Element {
                   libraryId={selectedVideo.libraryId}
                   embeddedMetadata={selectedVideo.metadata}
                   onBack={handleBackToHome}
+                  onNavigateHome={handleBackToHome}
                 />
               ) : (
                 <Home onVideoSelect={handleVideoSelect} />

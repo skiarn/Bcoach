@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Skill } from '../utils/skills.ts'
 import { getSportLabel } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
@@ -50,20 +50,25 @@ function FeedbackPanel({
   initialNextSteps = [],
 }: FeedbackPanelProps): JSX.Element {
   const { t, locale } = useI18n()
-  const GENERAL_FEEDBACK = [
-    t('feedback.general.1'),
-    t('feedback.general.2'),
-    t('feedback.general.3'),
-    t('feedback.general.4'),
-    t('feedback.general.5'),
-    t('feedback.general.6'),
-    t('feedback.general.7'),
-    t('feedback.general.8'),
-  ]
+  const hydrationKeyRef = useRef('')
+
+  const generalFeedback = useMemo(
+    () => [
+      t('feedback.general.1'),
+      t('feedback.general.2'),
+      t('feedback.general.3'),
+      t('feedback.general.4'),
+      t('feedback.general.5'),
+      t('feedback.general.6'),
+      t('feedback.general.7'),
+      t('feedback.general.8'),
+    ],
+    [locale, t]
+  )
 
   const feedbackItems = useMemo(
-    () => (skill ? [...skill.advice, ...GENERAL_FEEDBACK] : GENERAL_FEEDBACK),
-    [skill, GENERAL_FEEDBACK]
+    () => (skill ? [...skill.advice, ...generalFeedback] : generalFeedback),
+    [skill, generalFeedback]
   )
   const nextStepItems = useMemo(() => skill?.nextSteps ?? [], [skill])
   const showFeedbackSection = mode === 'all' || mode === 'feedback'
@@ -75,7 +80,18 @@ function FeedbackPanel({
   const [customNextStep, setCustomNextStep] = useState('')
 
   useEffect(() => {
-    if (initialFeedback.length === 0 && initialNextSteps.length === 0) return
+    const hydrationKey = JSON.stringify({
+      initialFeedback,
+      initialNextSteps,
+      feedbackItems,
+      nextStepItems,
+    })
+
+    if (hydrationKeyRef.current === hydrationKey) {
+      return
+    }
+
+    hydrationKeyRef.current = hydrationKey
 
     const feedbackSet = new Set<number>()
     const extraFeedback: string[] = []
