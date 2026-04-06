@@ -6,6 +6,7 @@ interface EditTimelineProps {
   duration: number
   currentTime: number
   segments: VideoSegment[]
+  showFeedbackAction?: boolean
   onAddSegment: (startTime: number, endTime: number) => string
   onUpdateSegment: (
     id: string,
@@ -19,6 +20,7 @@ type DragState =
   | { type: 'create'; startTime: number; endTime: number }
   | { type: 'move-start'; id: string }
   | { type: 'move-end'; id: string }
+  | { type: 'move-body'; id: string; pointerOffset: number }
   | null
 
 const MIN_SEGMENT_DURATION = 0.25
@@ -39,6 +41,7 @@ export default function EditTimeline({
   duration,
   currentTime,
   segments,
+  showFeedbackAction = false,
   onAddSegment,
   onUpdateSegment,
   onRemoveSegment,
@@ -66,6 +69,7 @@ export default function EditTimeline({
   )
 
   const timeToPercent = (t: number): number => (duration > 0 ? (t / duration) * 100 : 0)
+  const timelineWidthPx = Math.min(6000, Math.max(640, duration * 8))
 
   const handleTrackPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -74,12 +78,13 @@ export default function EditTimeline({
       if (target.closest('[data-segment]')) return
 
       e.currentTarget.setPointerCapture(e.pointerId)
-      const time = getTimeFromClientX(e.clientX)
-      setDragState({ type: 'create', startTime: time, endTime: time })
-      setPendingSegment({ startTime: time, endTime: time })
+      // Start new segments from the paused playhead position to make long-video editing predictable.
+      const anchorTime = clamp(currentTime, 0, duration)
+      setDragState({ type: 'create', startTime: anchorTime, endTime: anchorTime })
+      setPendingSegment({ startTime: anchorTime, endTime: anchorTime })
       setSelectedId(null)
     },
-    [getTimeFromClientX]
+    [currentTime, duration]
   )
 
   const handleTrackPointerMove = useCallback(
@@ -93,6 +98,16 @@ export default function EditTimeline({
         const end = Math.max(ds.startTime, time)
         setDragState({ ...ds, endTime: time })
         setPendingSegment({ startTime: start, endTime: end })
+      } else if (ds.type === 'move-body') {
+        const seg = segments.find((s) => s.id === ds.id)
+        if (!seg) return
+        const segmentLength = seg.endTime - seg.startTime
+        const nextStart = clamp(time - ds.pointerOffset, 0, Math.max(0, duration - segmentLength))
+        const nextEnd = nextStart + segmentLength
+        onUpdateSegment(ds.id, {
+          startTime: parseFloat(nextStart.toFixed(3)),
+          endTime: parseFloat(nextEnd.toFixed(3)),
+        })
       } else if (ds.type === 'move-start') {
         const seg = segments.find((s) => s.id === ds.id)
         if (!seg) return
@@ -139,17 +154,23 @@ export default function EditTimeline({
   const handleSegmentPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>, id: string, kind: 'handle-start' | 'handle-end' | 'body') => {
       e.stopPropagation()
+      const track = e.currentTarget.closest<HTMLElement>('[data-track]')
+      track?.setPointerCapture(e.pointerId)
+      setSelectedId(id)
+
       if (kind === 'body') {
-        setSelectedId((prev) => (prev === id ? null : id))
+        const seg = segments.find((s) => s.id === id)
+        if (!seg) return
+        const pointerTime = getTimeFromClientX(e.clientX)
+        const pointerOffset = clamp(pointerTime - seg.startTime, 0, Math.max(0, seg.endTime - seg.startTime))
+        setDragState({ type: 'move-body', id, pointerOffset })
         return
       }
 
-      e.currentTarget.closest<HTMLElement>('[data-track]')?.setPointerCapture(e.pointerId)
       const type = kind === 'handle-start' ? 'move-start' : 'move-end'
       setDragState({ type, id })
-      setSelectedId(id)
     },
-    []
+    [getTimeFromClientX, segments]
   )
 
   const selectedSegment = segments.find((s) => s.id === selectedId) ?? null
@@ -157,12 +178,14 @@ export default function EditTimeline({
   const segmentColor = (seg: VideoSegment): string => {
     if (seg.action === 'remove') return '#ef4444'
     if (seg.action === 'speed') return '#3b82f6'
+    if (seg.action === 'feedback') return '#f59e0b'
     return '#22c55e'
   }
 
   const segmentLabel = (seg: VideoSegment): string => {
     if (seg.action === 'remove') return t('editor.segment.remove')
     if (seg.action === 'speed') return `${seg.speedFactor ?? 2}${t('common.speedSuffix')}`
+    if (seg.action === 'feedback') return t('editor.segment.feedback')
     return t('editor.segment.keep')
   }
 
@@ -171,11 +194,16 @@ export default function EditTimeline({
       <p className="edit-timeline__hint">{t('editor.timeline.hint')}</p>
 
       <div className="edit-timeline__legend">
-        <span className="edit-timeline__legend-item edit-timeline__legend-item--remove">
-          {t('editor.segment.remove')}
-        </span>
+        {showFeedbackAction && (
+          <span className="edit-timeline__legend-item edit-timeline__legend-item--feedback">
+            {t('editor.segment.feedback')}
+          </span>
+        )}
         <span className="edit-timeline__legend-item edit-timeline__legend-item--speed">
           {t('editor.segment.speed')}
+        </span>
+        <span className="edit-timeline__legend-item edit-timeline__legend-item--remove">
+          {t('editor.segment.remove')}
         </span>
       </div>
 
@@ -184,6 +212,7 @@ export default function EditTimeline({
           ref={trackRef}
           data-track
           className="edit-timeline__track"
+          style={{ width: `${timelineWidthPx}px` }}
           onPointerDown={handleTrackPointerDown}
           onPointerMove={handleTrackPointerMove}
           onPointerUp={handleTrackPointerUp}
@@ -256,13 +285,15 @@ export default function EditTimeline({
           </p>
 
           <div className="edit-timeline__action-row">
-            <button
-              type="button"
-              className={`edit-timeline__action-btn${selectedSegment.action === 'remove' ? ' active' : ''}`}
-              onClick={() => onUpdateSegment(selectedSegment.id, { action: 'remove', speedFactor: undefined })}
-            >
-              ✂️ {t('editor.segment.remove')}
-            </button>
+            {showFeedbackAction && (
+              <button
+                type="button"
+                className={`edit-timeline__action-btn${selectedSegment.action === 'feedback' ? ' active' : ''}`}
+                onClick={() => onUpdateSegment(selectedSegment.id, { action: 'feedback', speedFactor: undefined })}
+              >
+                💬 {t('editor.segment.feedback')}
+              </button>
+            )}
 
             {SPEED_OPTIONS.map((factor) => (
               <button
@@ -280,6 +311,14 @@ export default function EditTimeline({
                 ⚡ {factor}{t('common.speedSuffix')}
               </button>
             ))}
+
+            <button
+              type="button"
+              className={`edit-timeline__action-btn${selectedSegment.action === 'remove' ? ' active' : ''}`}
+              onClick={() => onUpdateSegment(selectedSegment.id, { action: 'remove', speedFactor: undefined })}
+            >
+              ✂️ {t('editor.segment.remove')}
+            </button>
 
             <button
               type="button"

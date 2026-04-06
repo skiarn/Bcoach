@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import VideoPlayer from '../components/VideoPlayer.tsx'
 import DrawingCanvas from '../components/DrawingCanvas.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
+import FeedbackPanel from '../components/FeedbackPanel.tsx'
 import PlaybackToolbar from '../components/PlaybackToolbar.tsx'
 import DrawingToolbar from '../components/DrawingToolbar.tsx'
 import AppNav from '../components/AppNav.tsx'
@@ -13,7 +14,7 @@ import NextStepsStepPanel from '../components/analyzeSteps/NextStepsStepPanel.ts
 import SaveStepPanel from '../components/analyzeSteps/SaveStepPanel.tsx'
 import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
-import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
+import { AnalysisSegment, EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
 import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
 import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
 import { DEFAULT_SPORT_ID, getSportLabel } from '../utils/sports.ts'
@@ -22,6 +23,7 @@ import { useVideoSegments } from '../hooks/useVideoSegments.ts'
 import { useDeviceType } from '../hooks/useDeviceType.ts'
 import { applyVideoEdits } from '../utils/videoEditExport.ts'
 import { ANALYZE_STEP_ORDER, AnalyzeStep, getAnalyzeStepTitleKey } from './analyze/steps.ts'
+import { deriveLegacyFeedbackFromSegments, deriveLegacyNextStepsFromSegments } from '../utils/analysisMetadata.ts'
 
 interface VideoAnalysis {
   id: string
@@ -87,7 +89,44 @@ function Analyze({
   const [isApplyingEdits, setIsApplyingEdits] = useState(false)
   const [editProgress, setEditProgress] = useState(0)
   const [editError, setEditError] = useState<string | null>(null)
-  const { segments, addSegment, updateSegment, removeSegment, clearSegments } = useVideoSegments()
+  const { segments, addSegment, updateSegment, removeSegment, clearSegments, replaceSegments } = useVideoSegments()
+  const [analysisSegments, setAnalysisSegments] = useState<AnalysisSegment[]>([])
+  const [selectedAnalysisSegmentId, setSelectedAnalysisSegmentId] = useState<string | null>(null)
+
+  const createSegmentFeedback = (feedbackItems: string[], nextStepItems: string[]) => ({
+    checklist: feedbackItems,
+    notes: [],
+    nextSteps: nextStepItems,
+  })
+
+  const toSortedAnalysisSegments = (nextSegments: AnalysisSegment[]): AnalysisSegment[] =>
+    [...nextSegments]
+      .sort((a, b) => a.startTime - b.startTime)
+      .map((segment, index) => ({
+        ...segment,
+        attemptIndex: index + 1,
+      }))
+
+  const syncSegmentFeedbackDefaults = (
+    nextSegments: AnalysisSegment[],
+    feedbackItems: string[],
+    nextStepItems: string[]
+  ): AnalysisSegment[] =>
+    nextSegments.map((segment) => {
+      const hasUserSegmentFeedback =
+        segment.feedback.checklist.length > 0 ||
+        segment.feedback.notes.length > 0 ||
+        segment.feedback.nextSteps.length > 0
+
+      if (hasUserSegmentFeedback) {
+        return segment
+      }
+
+      return {
+        ...segment,
+        feedback: createSegmentFeedback(feedbackItems, nextStepItems),
+      }
+    })
 
   useEffect(() => {
     if (videoFile instanceof Blob) {
@@ -134,7 +173,7 @@ function Analyze({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [videoLoaded, setVideoLoaded] = useState(false)
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
-  const [workspaceMode, setWorkspaceMode] = useState<'draw' | 'segments'>('draw')
+  const [workspaceMode, setWorkspaceMode] = useState<'draw' | 'segments'>('segments')
   const [tool, setTool] = useState<Tool>("line");
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null)
@@ -149,6 +188,19 @@ function Analyze({
   const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedSkillType, setSelectedSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
   const [selectedSkillName, setSelectedSkillName] = useState<string>(derivedSkill?.name ?? '')
+
+  const fallbackFeedbackValues =
+    customFeedback.length > 0 ? customFeedback : (existingAnalysis?.feedback ?? embeddedMetadata?.feedback ?? [])
+  const fallbackNextStepValues =
+    customNextSteps.length > 0 ? customNextSteps : (existingAnalysis?.nextSteps ?? embeddedMetadata?.nextSteps ?? [])
+
+  const selectedAnalysisSegment = useMemo(
+    () => analysisSegments.find((segment) => segment.id === selectedAnalysisSegmentId) ?? null,
+    [analysisSegments, selectedAnalysisSegmentId]
+  )
+
+  const initialFeedbackValues = selectedAnalysisSegment?.feedback.checklist ?? fallbackFeedbackValues
+  const initialNextStepValues = selectedAnalysisSegment?.feedback.nextSteps ?? fallbackNextStepValues
 
   const rawVideoName = videoFile instanceof File
     ? videoFile.name
@@ -195,7 +247,9 @@ function Analyze({
     setShapes(existingAnalysis.shapes ?? [])
     setCustomFeedback(existingAnalysis.feedback ?? [])
     setCustomNextSteps(existingAnalysis.nextSteps ?? [])
-  }, [existingAnalysis])
+    setAnalysisSegments([])
+    replaceSegments([])
+  }, [existingAnalysis, replaceSegments])
 
   useEffect(() => {
     if (existingAnalysis || !embeddedMetadata) return
@@ -204,7 +258,22 @@ function Analyze({
     setShapes(embeddedMetadata.shapes ?? [])
     setCustomFeedback(embeddedMetadata.feedback ?? [])
     setCustomNextSteps(embeddedMetadata.nextSteps ?? [])
-  }, [embeddedMetadata, existingAnalysis])
+
+    const incomingAnalysisSegments: AnalysisSegment[] =
+      'analysisSegments' in embeddedMetadata && Array.isArray(embeddedMetadata.analysisSegments)
+        ? embeddedMetadata.analysisSegments
+        : []
+    setAnalysisSegments(toSortedAnalysisSegments(incomingAnalysisSegments))
+
+    replaceSegments(
+      incomingAnalysisSegments.map((segment: AnalysisSegment) => ({
+        id: segment.id,
+        startTime: segment.startTime,
+        endTime: segment.endTime,
+        action: 'feedback',
+      }))
+    )
+  }, [embeddedMetadata, existingAnalysis, replaceSegments])
 
   // Debug: Log when embeddedMetadata changes
   useEffect(() => {
@@ -213,9 +282,44 @@ function Analyze({
         shapes: embeddedMetadata.shapes?.length ?? 0,
         feedback: embeddedMetadata.feedback?.length ?? 0,
         nextSteps: embeddedMetadata.nextSteps?.length ?? 0,
+        analysisSegments:
+          'analysisSegments' in embeddedMetadata && Array.isArray(embeddedMetadata.analysisSegments)
+            ? embeddedMetadata.analysisSegments.length
+            : 0,
       })
     }
   }, [embeddedMetadata])
+
+  useEffect(() => {
+    setAnalysisSegments((previous) => {
+      if (previous.length === 0) {
+        return previous
+      }
+
+      const next = syncSegmentFeedbackDefaults(previous, customFeedback, customNextSteps)
+      const changed = next.some((segment, index) => {
+        const prevSegment = previous[index]
+        return (
+          prevSegment.feedback.checklist.length !== segment.feedback.checklist.length ||
+          prevSegment.feedback.notes.length !== segment.feedback.notes.length ||
+          prevSegment.feedback.nextSteps.length !== segment.feedback.nextSteps.length
+        )
+      })
+
+      return changed ? toSortedAnalysisSegments(next) : previous
+    })
+  }, [customFeedback, customNextSteps])
+
+  useEffect(() => {
+    if (analysisSegments.length === 0) {
+      setSelectedAnalysisSegmentId(null)
+      return
+    }
+
+    if (!selectedAnalysisSegmentId || !analysisSegments.some((segment) => segment.id === selectedAnalysisSegmentId)) {
+      setSelectedAnalysisSegmentId(analysisSegments[0].id)
+    }
+  }, [analysisSegments, selectedAnalysisSegmentId])
 
   const getSafeDuration = (): number => {
     if (!videoRef.current) return 0
@@ -468,19 +572,151 @@ function Analyze({
     URL.revokeObjectURL(downloadUrl)
   }
 
-  const handleSaveAnalysis = async (nextShapes: Shape[]) => {
-    setSaveError(null)
+  const handleAddAnalysisSegment = (startTime: number, endTime: number): string => {
+    const id = addSegment(startTime, endTime)
+    updateSegment(id, { action: 'feedback', speedFactor: undefined })
+    setSelectedAnalysisSegmentId(id)
 
-    const feedback = customFeedback.length > 0
-      ? customFeedback
-      : (embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? [])
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments([
+        ...previous,
+        {
+          id,
+          startTime,
+          endTime,
+          skillId: skill?.id,
+          skillName: skill?.name,
+          attemptIndex: previous.length + 1,
+          feedback: createSegmentFeedback(customFeedback, customNextSteps),
+        },
+      ])
+    )
 
-    const nextSteps = customNextSteps.length > 0
-      ? customNextSteps
-      : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
+    return id
+  }
 
-    const metadata: EmbeddedAnalysisMetadata = {
-      schemaVersion: 2,
+  const handleUpdateAnalysisSegment = (
+    id: string,
+    changes: Parameters<typeof updateSegment>[1]
+  ) => {
+    updateSegment(id, changes)
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== id) {
+            return segment
+          }
+
+          const nextStart = typeof changes.startTime === 'number' ? changes.startTime : segment.startTime
+          const nextEnd = typeof changes.endTime === 'number' ? changes.endTime : segment.endTime
+
+          return {
+            ...segment,
+            startTime: Math.max(0, Math.min(nextStart, nextEnd)),
+            endTime: Math.max(nextStart, nextEnd),
+          }
+        })
+      )
+    )
+  }
+
+  const handleRemoveAnalysisSegment = (id: string) => {
+    removeSegment(id)
+    setAnalysisSegments((previous) => toSortedAnalysisSegments(previous.filter((segment) => segment.id !== id)))
+  }
+
+  const handleClearAnalysisSegments = () => {
+    clearSegments()
+    setAnalysisSegments([])
+    setSelectedAnalysisSegmentId(null)
+  }
+
+  const handleSelectAnalysisSegment = (segmentId: string, seekToStart = false) => {
+    setSelectedAnalysisSegmentId(segmentId)
+
+    if (!seekToStart) {
+      return
+    }
+
+    const segment = analysisSegments.find((item) => item.id === segmentId)
+    if (!segment) {
+      return
+    }
+
+    handleSeek(segment.startTime)
+    handlePause()
+  }
+
+  const handleSegmentFeedbackChange = (feedbackItems: string[]) => {
+    setCustomFeedback(feedbackItems)
+
+    if (!selectedAnalysisSegmentId) {
+      return
+    }
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== selectedAnalysisSegmentId) {
+            return segment
+          }
+
+          return {
+            ...segment,
+            feedback: {
+              ...segment.feedback,
+              checklist: feedbackItems,
+            },
+          }
+        })
+      )
+    )
+  }
+
+  const handleSegmentNextStepsChange = (nextStepItems: string[]) => {
+    setCustomNextSteps(nextStepItems)
+
+    if (!selectedAnalysisSegmentId) {
+      return
+    }
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== selectedAnalysisSegmentId) {
+            return segment
+          }
+
+          return {
+            ...segment,
+            feedback: {
+              ...segment.feedback,
+              nextSteps: nextStepItems,
+            },
+          }
+        })
+      )
+    )
+  }
+
+  const buildMetadata = (nextShapes: Shape[]): EmbeddedAnalysisMetadata => {
+    const fallbackFeedback = embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? []
+    const fallbackNextSteps = embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? []
+
+    const feedback = customFeedback.length > 0 ? customFeedback : fallbackFeedback
+    const nextSteps = customNextSteps.length > 0 ? customNextSteps : fallbackNextSteps
+
+    const resolvedSegments = toSortedAnalysisSegments(
+      syncSegmentFeedbackDefaults(analysisSegments, feedback, nextSteps).map((segment) => ({
+        ...segment,
+        skillId: segment.skillId ?? skill?.id,
+        skillName: segment.skillName ?? skill?.name,
+      }))
+    )
+
+    return {
+      schemaVersion: 3,
       savedAt: Date.now(),
       sourceVideoName: videoName,
       sportId: skill?.sportId,
@@ -488,9 +724,15 @@ function Analyze({
       skillName: skill?.name,
       skillType: skill?.sportId,
       shapes: nextShapes,
-      feedback,
-      nextSteps,
+      feedback: resolvedSegments.length > 0 ? deriveLegacyFeedbackFromSegments(resolvedSegments) : feedback,
+      nextSteps: resolvedSegments.length > 0 ? deriveLegacyNextStepsFromSegments(resolvedSegments) : nextSteps,
+      analysisSegments: resolvedSegments,
     }
+  }
+
+  const handleSaveAnalysis = async (nextShapes: Shape[]) => {
+    setSaveError(null)
+    const metadata = buildMetadata(nextShapes)
 
     setIsExporting(true)
 
@@ -552,26 +794,7 @@ function Analyze({
         return
       }
 
-      const feedback = customFeedback.length > 0
-        ? customFeedback
-        : (embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? [])
-
-      const nextSteps = customNextSteps.length > 0
-        ? customNextSteps
-        : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
-
-      const metadata: EmbeddedAnalysisMetadata = {
-        schemaVersion: 2,
-        savedAt: Date.now(),
-        sourceVideoName: videoName,
-        sportId: skill?.sportId,
-        skillId: skill?.id,
-        skillName: skill?.name,
-        skillType: skill?.sportId,
-        shapes: nextShapes,
-        feedback,
-        nextSteps,
-      }
+      const metadata = buildMetadata(nextShapes)
 
       console.log('[LibrarySave] Updating library record with metadata...')
       const updatedBlob = workingVideoBlob ?? record.blob
@@ -627,7 +850,7 @@ function Analyze({
       setCurrentTime(0)
       setDuration(0)
       setVideoLoaded(false)
-      clearSegments()
+      handleClearAnalysisSegments()
     } catch {
       setEditError(t('editor.error.exportFailed'))
     } finally {
@@ -678,8 +901,75 @@ function Analyze({
     })
   }
 
-  const initialFeedbackValues = customFeedback.length > 0 ? customFeedback : (existingAnalysis?.feedback ?? embeddedMetadata?.feedback ?? [])
-  const initialNextStepValues = customNextSteps.length > 0 ? customNextSteps : (existingAnalysis?.nextSteps ?? embeddedMetadata?.nextSteps ?? [])
+  const renderSegmentSelector = (showPauseButton: boolean): JSX.Element | null => {
+    if (analysisSegments.length === 0) {
+      return (
+        <p className="analyze-segment-selector__empty">
+          {t('analyze.segmentSelector.empty')}
+        </p>
+      )
+    }
+
+    return (
+      <div className="analyze-segment-selector">
+        <p className="analyze-segment-selector__title">{t('analyze.segmentSelector.title')}</p>
+        <div className="analyze-segment-selector__chips">
+          {analysisSegments.map((segment, index) => {
+            const isActive = segment.id === selectedAnalysisSegmentId
+
+            return (
+              <button
+                key={segment.id}
+                type="button"
+                onClick={() => handleSelectAnalysisSegment(segment.id)}
+                className={`analyze-segment-selector__chip ${isActive ? 'active' : ''}`}
+              >
+                {t('analyze.segmentSelector.item', {
+                  index: index + 1,
+                  start: formatTime(segment.startTime),
+                  end: formatTime(segment.endTime),
+                })}
+              </button>
+            )
+          })}
+        </div>
+
+        {showPauseButton && selectedAnalysisSegment && (
+          <button
+            type="button"
+            className="analyze-segment-selector__pause"
+            onClick={() => handleSelectAnalysisSegment(selectedAnalysisSegment.id, true)}
+          >
+            {t('analyze.segmentSelector.pauseAt', {
+              time: formatTime(selectedAnalysisSegment.startTime),
+            })}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  const renderInlineSegmentFeedbackEditor = (): JSX.Element | null => {
+    if (workspaceMode !== 'segments') {
+      return null
+    }
+
+    return (
+      <div className="analyze-inline-segment-feedback">
+        {renderSegmentSelector(true)}
+        {selectedAnalysisSegment ? (
+          <FeedbackPanel
+            skill={skill}
+            mode="all"
+            initialFeedback={selectedAnalysisSegment.feedback.checklist}
+            initialNextSteps={selectedAnalysisSegment.feedback.nextSteps}
+            onFeedbackChange={handleSegmentFeedbackChange}
+            onNextStepsChange={handleSegmentNextStepsChange}
+          />
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className={`analyze ${showDrawingCanvas ? 'analyze--drawing-mobile-open' : ''}`}>
@@ -769,18 +1059,6 @@ function Analyze({
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={workspaceMode === 'draw'}
-                  className={workspaceMode === 'draw' ? 'active' : ''}
-                  onClick={() => {
-                    setWorkspaceMode('draw')
-                    setShowDrawingCanvas(true)
-                  }}
-                >
-                  {t('analyze.step1')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
                   aria-selected={workspaceMode === 'segments'}
                   className={workspaceMode === 'segments' ? 'active' : ''}
                   onClick={() => {
@@ -790,8 +1068,60 @@ function Analyze({
                 >
                   {t('analyze.edit.title')}
                 </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={workspaceMode === 'draw'}
+                  className={workspaceMode === 'draw' ? 'active' : ''}
+                  onClick={() => {
+                    setWorkspaceMode('draw')
+                    setShowDrawingCanvas(true)
+                  }}
+                >
+                  {t('analyze.step1')}
+                </button>
+                
               </div>
 
+              {workspaceMode === 'segments' && !isMobile && videoLoaded && duration > 0 && (
+                <div className="analyze-inline-segment-editor">
+                  <EditTimeline
+                    duration={duration}
+                    currentTime={currentTime}
+                    segments={segments}
+                    showFeedbackAction={true}
+                    onAddSegment={handleAddAnalysisSegment}
+                    onUpdateSegment={handleUpdateAnalysisSegment}
+                    onRemoveSegment={handleRemoveAnalysisSegment}
+                    onSeek={handleSeek}
+                  />
+
+                  <div className="analyze-inline-segment-actions">
+                    <button
+                      type="button"
+                      className="analyze-inline-btn analyze-inline-btn--apply"
+                      onClick={() => void applySegmentEdits()}
+                      disabled={segments.length === 0 || isApplyingEdits}
+                    >
+                      {isApplyingEdits
+                        ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
+                        : t('analyze.edit.apply')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="analyze-inline-btn"
+                      onClick={handleClearAnalysisSegments}
+                      disabled={segments.length === 0 || isApplyingEdits}
+                    >
+                      {t('editor.clearSegments')}
+                    </button>
+                  </div>
+
+                  {editError && <p className="analyze-inline-error">{editError}</p>}
+                  {renderInlineSegmentFeedbackEditor()}
+                </div>
+              )}
               {workspaceMode === 'draw' && showDrawingCanvas && !isMobile && (
                 <div className="analyze-inline-draw-editor">
                   <div className="analyze-inline-tools" role="toolbar" aria-label="Drawing tools">
@@ -886,46 +1216,56 @@ function Analyze({
                 </div>
               )}
 
-              {workspaceMode === 'segments' && !isMobile && videoLoaded && duration > 0 && (
-                <div className="analyze-inline-segment-editor">
-                  <EditTimeline
-                    duration={duration}
-                    currentTime={currentTime}
-                    segments={segments}
-                    onAddSegment={addSegment}
-                    onUpdateSegment={updateSegment}
-                    onRemoveSegment={removeSegment}
-                    onSeek={handleSeek}
-                  />
-
-                  <div className="analyze-inline-segment-actions">
-                    <button
-                      type="button"
-                      className="analyze-inline-btn analyze-inline-btn--apply"
-                      onClick={() => void applySegmentEdits()}
-                      disabled={segments.length === 0 || isApplyingEdits}
-                    >
-                      {isApplyingEdits
-                        ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
-                        : t('analyze.edit.apply')}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="analyze-inline-btn"
-                      onClick={clearSegments}
-                      disabled={segments.length === 0 || isApplyingEdits}
-                    >
-                      {t('editor.clearSegments')}
-                    </button>
-                  </div>
-
-                  {editError && <p className="analyze-inline-error">{editError}</p>}
-                </div>
-              )}
+              
             </div>
           </div>
 
+           {workspaceMode === 'segments' && isMobile && videoLoaded && duration > 0 && (
+            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
+              <h3>{t('analyze.edit.title')}</h3>
+              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+
+              <EditTimeline
+                duration={duration}
+                currentTime={currentTime}
+                segments={segments}
+                showFeedbackAction={true}
+                onAddSegment={handleAddAnalysisSegment}
+                onUpdateSegment={handleUpdateAnalysisSegment}
+                onRemoveSegment={handleRemoveAnalysisSegment}
+                onSeek={handleSeek}
+              />
+
+              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="analyze-inline-btn analyze-inline-btn--apply"
+                  onClick={() => void applySegmentEdits()}
+                  disabled={segments.length === 0 || isApplyingEdits}
+                >
+                  {isApplyingEdits
+                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
+                    : t('analyze.edit.apply')}
+                </button>
+
+                <button
+                  type="button"
+                  className="analyze-inline-btn"
+                  onClick={handleClearAnalysisSegments}
+                  disabled={segments.length === 0 || isApplyingEdits}
+                >
+                  {t('editor.clearSegments')}
+                </button>
+              </div>
+
+              {editError && (
+                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
+              )}
+
+              {renderInlineSegmentFeedbackEditor()}
+            </div>
+          )}
+          
           {workspaceMode === 'draw' && showDrawingCanvas && isMobile && (
             <DrawingToolbar
               selectedTool={tool === 'none' ? 'none' : (tool as 'line' | 'circle' | 'rectangle' | 'arrow' | 'eraser' | 'none')}
@@ -949,7 +1289,7 @@ function Analyze({
             />
           )}
 
-                            {workspaceMode === 'draw' && showDrawingCanvas && isMobile && shapes.length > 0 && (
+          {workspaceMode === 'draw' && showDrawingCanvas && isMobile && shapes.length > 0 && (
             <div className="shape-timeline-editor">
               <h3>{t('analyze.timeline.title')}</h3>
 
@@ -1008,48 +1348,7 @@ function Analyze({
             </div>
           )}
 
-          {workspaceMode === 'segments' && isMobile && videoLoaded && duration > 0 && (
-            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
-              <h3>{t('analyze.edit.title')}</h3>
-              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
-
-              <EditTimeline
-                duration={duration}
-                currentTime={currentTime}
-                segments={segments}
-                onAddSegment={addSegment}
-                onUpdateSegment={updateSegment}
-                onRemoveSegment={removeSegment}
-                onSeek={handleSeek}
-              />
-
-              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="analyze-inline-btn analyze-inline-btn--apply"
-                  onClick={() => void applySegmentEdits()}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {isApplyingEdits
-                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
-                    : t('analyze.edit.apply')}
-                </button>
-
-                <button
-                  type="button"
-                  className="analyze-inline-btn"
-                  onClick={clearSegments}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {t('editor.clearSegments')}
-                </button>
-              </div>
-
-              {editError && (
-                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
-              )}
-            </div>
-          )}
+         
           </div>
         )}
 
@@ -1067,36 +1366,50 @@ function Analyze({
             )}
 
             {currentStep === 'feedback' && (
-              <FeedbackStepPanel
-                skill={skill}
-                initialFeedback={initialFeedbackValues}
-                initialNextSteps={initialNextStepValues}
-                onFeedbackChange={setCustomFeedback}
-                onNextStepsChange={setCustomNextSteps}
-              />
+              <>
+                {renderSegmentSelector(false)}
+                <FeedbackStepPanel
+                  skill={skill}
+                  initialFeedback={initialFeedbackValues}
+                  initialNextSteps={initialNextStepValues}
+                  onFeedbackChange={handleSegmentFeedbackChange}
+                  onNextStepsChange={handleSegmentNextStepsChange}
+                />
+              </>
             )}
 
             {currentStep === 'nextSteps' && (
-              <NextStepsStepPanel
-                skill={skill}
-                skillLabel={t('analyze.nextSteps.skillLabel')}
-                selectedSkillType={selectedSkillType}
-                selectedSkillName={selectedSkillName}
-                initialFeedback={initialFeedbackValues}
-                initialNextSteps={initialNextStepValues}
-                onSkillTypeChange={setSelectedSkillType}
-                onSkillNameChange={setSelectedSkillName}
-                onFeedbackChange={setCustomFeedback}
-                onNextStepsChange={setCustomNextSteps}
-              />
+              <>
+                {renderSegmentSelector(false)}
+                <NextStepsStepPanel
+                  skill={skill}
+                  skillLabel={t('analyze.nextSteps.skillLabel')}
+                  selectedSkillType={selectedSkillType}
+                  selectedSkillName={selectedSkillName}
+                  initialFeedback={initialFeedbackValues}
+                  initialNextSteps={initialNextStepValues}
+                  onSkillTypeChange={setSelectedSkillType}
+                  onSkillNameChange={setSelectedSkillName}
+                  onFeedbackChange={handleSegmentFeedbackChange}
+                  onNextStepsChange={handleSegmentNextStepsChange}
+                />
+              </>
             )}
 
             {currentStep === 'save' && (
               <SaveStepPanel
                 isSaved={isSaved}
                 saveError={saveError}
-                feedbackCountLabel={t('analyze.save.feedbackPoints', { count: customFeedback.length })}
-                nextStepsCountLabel={t('analyze.save.nextSteps', { count: customNextSteps.length })}
+                feedbackCountLabel={t('analyze.save.feedbackPoints', {
+                  count: analysisSegments.length > 0
+                    ? deriveLegacyFeedbackFromSegments(analysisSegments).length
+                    : initialFeedbackValues.length,
+                })}
+                nextStepsCountLabel={t('analyze.save.nextSteps', {
+                  count: analysisSegments.length > 0
+                    ? deriveLegacyNextStepsFromSegments(analysisSegments).length
+                    : initialNextStepValues.length,
+                })}
                 readyLabel={t('analyze.save.ready')}
                 helpLabel={t('analyze.save.help')}
                 savedTitleLabel={t('analyze.saved.title')}

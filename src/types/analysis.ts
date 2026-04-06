@@ -13,8 +13,32 @@ export interface Shape {
   visibleTo?: number
 }
 
-export interface EmbeddedAnalysisMetadata {
-  schemaVersion: 1 | 2
+export interface FeedbackPin {
+  id: string
+  timeOffset: number
+  text: string
+  tag?: string
+}
+
+export interface SegmentFeedback {
+  checklist: string[]
+  notes: string[]
+  nextSteps: string[]
+  score?: number
+  pins?: FeedbackPin[]
+}
+
+export interface AnalysisSegment {
+  id: string
+  startTime: number
+  endTime: number
+  skillId?: string
+  skillName?: string
+  attemptIndex: number
+  feedback: SegmentFeedback
+}
+
+interface EmbeddedAnalysisMetadataBase {
   savedAt: number
   sportId?: string
   skillId?: string
@@ -26,3 +50,14 @@ export interface EmbeddedAnalysisMetadata {
   nextSteps: string[]
   shapes: Shape[]
 }
+
+export interface EmbeddedAnalysisMetadataV1V2 extends EmbeddedAnalysisMetadataBase {
+  schemaVersion: 1 | 2
+}
+
+export interface EmbeddedAnalysisMetadataV3 extends EmbeddedAnalysisMetadataBase {
+  schemaVersion: 3
+  analysisSegments: AnalysisSegment[]
+}
+
+export type EmbeddedAnalysisMetadata = EmbeddedAnalysisMetadataV1V2 | EmbeddedAnalysisMetadataV3

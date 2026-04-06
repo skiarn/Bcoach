@@ -42,5 +42,17 @@ export function useVideoSegments() {
     setSegments([])
   }, [])
 
-  return { segments, addSegment, updateSegment, removeSegment, clearSegments }
+  const replaceSegments = useCallback((nextSegments: VideoSegment[]) => {
+    setSegments(
+      [...nextSegments]
+        .map((segment) => ({
+          ...segment,
+          startTime: Math.max(0, Math.min(segment.startTime, segment.endTime)),
+          endTime: Math.max(segment.startTime, segment.endTime),
+        }))
+        .sort((a, b) => a.startTime - b.startTime)
+    )
+  }, [])
+
+  return { segments, addSegment, updateSegment, removeSegment, clearSegments, replaceSegments }
 }

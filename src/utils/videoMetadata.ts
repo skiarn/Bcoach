@@ -37,11 +37,20 @@ function isValidMetadata(value: unknown): value is EmbeddedAnalysisMetadata {
   if (!value || typeof value !== 'object') return false
 
   const candidate = value as Partial<EmbeddedAnalysisMetadata>
+  const hasValidSchema =
+    candidate.schemaVersion === 1 ||
+    candidate.schemaVersion === 2 ||
+    candidate.schemaVersion === 3
+
+  const hasValidSegments =
+    candidate.schemaVersion !== 3 || Array.isArray((candidate as { analysisSegments?: unknown }).analysisSegments)
+
   return (
-    (candidate.schemaVersion === 1 || candidate.schemaVersion === 2) &&
+    hasValidSchema &&
     Array.isArray(candidate.feedback) &&
     Array.isArray(candidate.nextSteps) &&
-    Array.isArray(candidate.shapes)
+    Array.isArray(candidate.shapes) &&
+    hasValidSegments
   )
 }
 

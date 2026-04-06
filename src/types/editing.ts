@@ -1,4 +1,4 @@
-export type SegmentAction = 'keep' | 'remove' | 'speed'
+export type SegmentAction = 'keep' | 'remove' | 'speed' | 'feedback'
 
 export type SpeedFactor = 1.5 | 2 | 4
 
