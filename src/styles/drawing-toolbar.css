@@ -1,0 +1,410 @@
+/* ====== Drawing Toolbar - Professional Redesign ====== */
+
+.drawing-toolbar {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e0e8f0;
+  overflow: hidden;
+}
+
+/* ===== Desktop Sidebar Layout ===== */
+.drawing-toolbar--desktop {
+  position: sticky;
+  top: 20px;
+  width: 240px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.drawing-toolbar--desktop .drawing-toolbar__tools.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawing-toolbar--desktop .drawing-toolbar__tools.vertical .icon-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.drawing-toolbar--desktop .drawing-toolbar__actions.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawing-toolbar--desktop .drawing-toolbar__actions.vertical .icon-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.drawing-toolbar--desktop .drawing-toolbar__color-grid.vertical {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+/* ===== Tablet Horizontal Layout ===== */
+.drawing-toolbar--tablet {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #f8f9fa 0%, #f0f4f9 100%);
+}
+
+.drawing-toolbar--tablet .drawing-toolbar__section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.drawing-toolbar--tablet .drawing-toolbar__section-title {
+  display: none;
+}
+
+/* ===== Mobile Bottom Drawer ===== */
+.drawing-toolbar--mobile {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: #fff;
+  border-top: 1px solid #e0e8f0;
+  z-index: 1200;
+  max-height: 80vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.drawing-toolbar__mobile-tabs {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid #e0e8f0;
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+}
+
+.drawing-toolbar__tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #34495e;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.drawing-toolbar__tab:hover {
+  background: rgba(0, 123, 255, 0.05);
+}
+
+.drawing-toolbar__tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+  background: rgba(0, 123, 255, 0.02);
+}
+
+.drawing-toolbar__mobile-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== Shared Sections ===== */
+.drawing-toolbar__section {
+  padding: 16px;
+  border-bottom: 1px solid #e0e8f0;
+}
+
+.drawing-toolbar__section:last-child {
+  border-bottom: none;
+}
+
+.drawing-toolbar__section-title {
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1f3650;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Tool buttons grid */
+.drawing-toolbar__tools {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.drawing-toolbar__tools.horizontal {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.drawing-toolbar__tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.drawing-toolbar__tool-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1.5px solid #e0e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #34495e;
+}
+
+.drawing-toolbar__tool-button:hover {
+  background: #eef6ff;
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.drawing-toolbar__tool-button.active {
+  background: linear-gradient(135deg, #007bff 0%, #0056cc 100%);
+  color: #fff;
+  border-color: #0056cc;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.drawing-toolbar__tool-icon {
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawing-toolbar__tool-label {
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+/* ===== Properties ===== */
+.drawing-toolbar__property {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawing-toolbar__property-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f3650;
+}
+
+/* Color swatches */
+.drawing-toolbar__color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.drawing-toolbar__color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.drawing-toolbar__color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.drawing-toolbar__color-swatch.active {
+  border-color: #000;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+}
+
+/* Stroke width */
+.drawing-toolbar__quick-widths {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.drawing-toolbar__width-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: #f8f9fa;
+  border: 1.5px solid #e0e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 40px;
+}
+
+.drawing-toolbar__width-button:hover {
+  background: #eef6ff;
+  border-color: #007bff;
+}
+
+.drawing-toolbar__width-button.active {
+  background: #007bff;
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.drawing-toolbar__width-preview {
+  width: 100%;
+  background: #34495e;
+  border-radius: 1px;
+}
+
+.drawing-toolbar__width-button.active .drawing-toolbar__width-preview {
+  background: #fff;
+}
+
+/* Sliders */
+.drawing-toolbar__slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawing-toolbar__slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0e8f0;
+  outline: none;
+  accent-color: #007bff;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.drawing-toolbar__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+}
+
+.drawing-toolbar__slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+}
+
+/* Actions */
+.drawing-toolbar__actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.drawing-toolbar__actions.vertical {
+  flex-direction: column;
+}
+
+.drawing-toolbar__actions .icon-button {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Scrollbar styling for mobile */
+.drawing-toolbar--mobile::-webkit-scrollbar {
+  width: 6px;
+}
+
+.drawing-toolbar--mobile::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawing-toolbar--mobile::-webkit-scrollbar-thumb {
+  background: #d9e1ea;
+  border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 767px) {
+  .drawing-toolbar {
+    width: 100%;
+    max-width: none;
+  }
+
+  .drawing-toolbar--mobile {
+    height: auto;
+    max-height: min(68vh, 520px);
+  }
+
+  /* Keep Analyze content reachable while the fixed drawing toolbar is open. */
+  .analyze.analyze--drawing-mobile-open {
+    padding-bottom: calc(330px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .analyze.analyze--drawing-mobile-open .shape-timeline-editor:last-of-type {
+    margin-bottom: 10px;
+  }
+
+  .drawing-toolbar__color-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .drawing-toolbar__tool-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .drawing-toolbar--tablet {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .drawing-toolbar__section {
+    padding: 8px 12px;
+    border-bottom: none;
+    border-right: 1px solid #e0e8f0;
+  }
+
+  .drawing-toolbar__section:last-child {
+    border-right: none;
+  }
+}
+
+@media (min-width: 992px) {
+  .drawing-toolbar--desktop {
+    width: 260px;
+  }
+
+  .drawing-toolbar__section {
+    padding: 16px;
+  }
+}

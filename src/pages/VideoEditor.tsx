@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppNav from '../components/AppNav.tsx'
-import Controls from '../components/Controls.tsx'
+import PlaybackToolbar from '../components/PlaybackToolbar.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
 import EditProgressOverlay from '../components/EditProgressOverlay.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
@@ -28,7 +28,6 @@ function VideoEditor(): JSX.Element {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -85,12 +84,6 @@ function VideoEditor(): JSX.Element {
     if (!videoRef.current) return
     videoRef.current.currentTime = time
     setCurrentTime(time)
-  }
-
-  const handleSpeedChange = (speed: number) => {
-    if (!videoRef.current) return
-    videoRef.current.playbackRate = speed
-    setPlaybackRate(speed)
   }
 
   const handleSave = async (replaceOriginal: boolean) => {
@@ -208,14 +201,12 @@ function VideoEditor(): JSX.Element {
             onEnded={() => setIsPlaying(false)}
           />
           <div className="video-controls-overlay">
-            <Controls
+            <PlaybackToolbar
               isPlaying={isPlaying}
-              playbackRate={playbackRate}
               currentTime={currentTime}
               duration={duration}
               onPlay={handlePlay}
               onPause={handlePause}
-              onSpeedChange={handleSpeedChange}
               onSeek={handleSeek}
               videoLoaded={true}
             />

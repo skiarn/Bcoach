@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import VideoPlayer from '../components/VideoPlayer.tsx'
 import DrawingCanvas from '../components/DrawingCanvas.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
-import Controls from '../components/Controls.tsx'
+import PlaybackToolbar from '../components/PlaybackToolbar.tsx'
+import DrawingToolbar from '../components/DrawingToolbar.tsx'
 import AppNav from '../components/AppNav.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
 import DrawStepPanel from '../components/analyzeSteps/DrawStepPanel.tsx'
@@ -18,6 +19,7 @@ import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '
 import { DEFAULT_SPORT_ID, getSportLabel } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
+import { useDeviceType } from '../hooks/useDeviceType.ts'
 import { applyVideoEdits } from '../utils/videoEditExport.ts'
 import { ANALYZE_STEP_ORDER, AnalyzeStep, getAnalyzeStepTitleKey } from './analyze/steps.ts'
 
@@ -55,6 +57,8 @@ function Analyze({
   onNavigateHome,
 }: AnalyzeProps): JSX.Element {
   const { t, locale } = useI18n()
+  const deviceType = useDeviceType()
+  const isMobile = deviceType === 'mobile'
   const navigate = useNavigate()
   const location = useLocation()
   const stateSkill: Skill | undefined = location.state?.skill
@@ -123,7 +127,6 @@ function Analyze({
   const videoRef = useRef<HTMLVideoElement>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [videoDisplayWidth, setVideoDisplayWidth] = useState(0)
@@ -131,9 +134,13 @@ function Analyze({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [videoLoaded, setVideoLoaded] = useState(false)
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
+  const [workspaceMode, setWorkspaceMode] = useState<'draw' | 'segments'>('draw')
   const [tool, setTool] = useState<Tool>("line");
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null)
+  const [drawingColor, setDrawingColor] = useState('#ff0000')
+  const [drawingStrokeWidth, setDrawingStrokeWidth] = useState(2)
+  const [drawingOpacity, setDrawingOpacity] = useState(1)
   const [customFeedback, setCustomFeedback] = useState<string[]>([])
   const [customNextSteps, setCustomNextSteps] = useState<string[]>([])
   const [currentStep, setCurrentStep] = useState<AnalyzeStep>('draw')
@@ -242,13 +249,6 @@ function Analyze({
     if (videoRef.current) {
       videoRef.current.pause()
       setIsPlaying(false)
-    }
-  }
-
-  const handleSpeedChange = (speed: number) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed
-      setPlaybackRate(speed)
     }
   }
 
@@ -392,8 +392,16 @@ function Analyze({
       setShowDrawingCanvas(false)
     }
 
-    if (currentStep === 'draw' && !showDrawingCanvas) {
+    if (currentStep === 'draw' && workspaceMode === 'draw' && !showDrawingCanvas) {
       setShowDrawingCanvas(true)
+    }
+
+    if (currentStep === 'draw' && workspaceMode === 'segments' && showDrawingCanvas) {
+      setShowDrawingCanvas(false)
+    }
+
+    if (currentStep !== 'draw' && workspaceMode !== 'draw') {
+      setWorkspaceMode('draw')
     }
 
     if (currentStep !== 'draw' && document.fullscreenElement === videoContainerRef.current) {
@@ -401,7 +409,7 @@ function Analyze({
         // Ignore exit fullscreen failure when leaving draw step.
       })
     }
-  }, [currentStep, showDrawingCanvas])
+  }, [currentStep, showDrawingCanvas, workspaceMode])
 
   const updateSelectedShapeRange = (field: 'visibleFrom' | 'visibleTo', value: number) => {
     if (!selectedShapeId) return
@@ -520,14 +528,14 @@ function Analyze({
     }
   }
 
-  const clearCanvas = () => {
-    setShapes([]);
-    setSelectedShapeId(null)
-  };
+  const deleteShapeById = (shapeId: string) => {
+    setShapes((prev) => prev.filter((shape) => shape.id !== shapeId))
+  }
 
-  const undoLastShape = () => {
-    setShapes((prev) => prev.slice(0, -1));
-  };
+  const deleteSelectedShape = () => {
+    if (!selectedShapeId) return
+    deleteShapeById(selectedShapeId)
+  }
 
   const saveAnalysisToLibrary = async (nextShapes: Shape[]) => {
     if (!libraryId) {
@@ -674,7 +682,7 @@ function Analyze({
   const initialNextStepValues = customNextSteps.length > 0 ? customNextSteps : (existingAnalysis?.nextSteps ?? embeddedMetadata?.nextSteps ?? [])
 
   return (
-    <div className="analyze">
+    <div className={`analyze ${showDrawingCanvas ? 'analyze--drawing-mobile-open' : ''}`}>
       <AppNav />
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <button onClick={onBack}>← {t('common.back')}</button>
@@ -745,47 +753,226 @@ function Analyze({
             )}
 
             <div className="video-controls-overlay">
-              <Controls
+              <PlaybackToolbar
                 isPlaying={isPlaying}
-                playbackRate={playbackRate}
                 currentTime={currentTime}
                 duration={duration}
                 onPlay={handlePlay}
                 onPause={handlePause}
-                onSpeedChange={handleSpeedChange}
                 onSeek={handleSeek}
                 videoLoaded={videoLoaded}
-                onToggleDrawing={() => setShowDrawingCanvas(!showDrawingCanvas)}
-                showDrawingCanvas={showDrawingCanvas}
                 onToggleFullscreen={handleToggleFullscreen}
                 isFullscreen={isFullscreen}
               />
+
+              <div className="analyze-workspace-mode" role="tablist" aria-label="Workspace mode">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={workspaceMode === 'draw'}
+                  className={workspaceMode === 'draw' ? 'active' : ''}
+                  onClick={() => {
+                    setWorkspaceMode('draw')
+                    setShowDrawingCanvas(true)
+                  }}
+                >
+                  {t('analyze.step1')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={workspaceMode === 'segments'}
+                  className={workspaceMode === 'segments' ? 'active' : ''}
+                  onClick={() => {
+                    setWorkspaceMode('segments')
+                    setShowDrawingCanvas(false)
+                  }}
+                >
+                  {t('analyze.edit.title')}
+                </button>
+              </div>
+
+              {workspaceMode === 'draw' && showDrawingCanvas && !isMobile && (
+                <div className="analyze-inline-draw-editor">
+                  <div className="analyze-inline-tools" role="toolbar" aria-label="Drawing tools">
+                    <button
+                      type="button"
+                      className={tool === 'line' ? 'active' : ''}
+                      onClick={() => setTool('line')}
+                    >
+                      {t('analyze.tool.line')}
+                    </button>
+                    <button
+                      type="button"
+                      className={tool === 'circle' ? 'active' : ''}
+                      onClick={() => setTool('circle')}
+                    >
+                      {t('analyze.tool.circle')}
+                    </button>
+                    <button
+                      type="button"
+                      className={tool === 'none' ? 'active' : ''}
+                      onClick={() => setTool('none')}
+                    >
+                      {t('analyze.tool.none')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={deleteSelectedShape}
+                      disabled={!selectedShapeId}
+                    >
+                      {t('analyze.tool.delete')}
+                    </button>
+                  </div>
+
+                  {shapes.length > 0 && (
+                    <div className="analyze-inline-draw-range-editor">
+                      <h4>{t('analyze.timeline.title')}</h4>
+
+                      <div className="shape-selector-list">
+                        {shapes.map((shape, index) => (
+                          <div key={shape.id} className="shape-chip">
+                            <button
+                              type="button"
+                              className={`shape-chip__select ${selectedShapeId === shape.id ? 'active' : ''}`}
+                              onClick={() => setSelectedShapeId(shape.id)}
+                            >
+                              {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
+                            </button>
+                            <button
+                              type="button"
+                              className="shape-chip__delete"
+                              onClick={() => deleteShapeById(shape.id)}
+                              aria-label={`${t('analyze.tool.delete')} ${index + 1}`}
+                              title={t('analyze.tool.delete')}
+                            >
+                              <span aria-hidden="true">🗑</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {selectedShape && (
+                        <div className="shape-range-controls">
+                          <label>
+                            {t('analyze.timeline.start', { time: formatTime(selectedShape.visibleFrom ?? 0) })}
+                            <input
+                              type="range"
+                              min={0}
+                              max={duration || 0}
+                              step={0.1}
+                              value={selectedShape.visibleFrom ?? 0}
+                              onChange={(e) => updateSelectedShapeRange('visibleFrom', Number(e.target.value))}
+                              disabled={duration <= 0}
+                            />
+                          </label>
+
+                          <label>
+                            {t('analyze.timeline.end', { time: formatTime(selectedShape.visibleTo ?? duration) })}
+                            <input
+                              type="range"
+                              min={0}
+                              max={duration || 0}
+                              step={0.1}
+                              value={selectedShape.visibleTo ?? duration}
+                              onChange={(e) => updateSelectedShapeRange('visibleTo', Number(e.target.value))}
+                              disabled={duration <= 0}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {workspaceMode === 'segments' && !isMobile && videoLoaded && duration > 0 && (
+                <div className="analyze-inline-segment-editor">
+                  <EditTimeline
+                    duration={duration}
+                    currentTime={currentTime}
+                    segments={segments}
+                    onAddSegment={addSegment}
+                    onUpdateSegment={updateSegment}
+                    onRemoveSegment={removeSegment}
+                    onSeek={handleSeek}
+                  />
+
+                  <div className="analyze-inline-segment-actions">
+                    <button
+                      type="button"
+                      className="analyze-inline-btn analyze-inline-btn--apply"
+                      onClick={() => void applySegmentEdits()}
+                      disabled={segments.length === 0 || isApplyingEdits}
+                    >
+                      {isApplyingEdits
+                        ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
+                        : t('analyze.edit.apply')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="analyze-inline-btn"
+                      onClick={clearSegments}
+                      disabled={segments.length === 0 || isApplyingEdits}
+                    >
+                      {t('editor.clearSegments')}
+                    </button>
+                  </div>
+
+                  {editError && <p className="analyze-inline-error">{editError}</p>}
+                </div>
+              )}
             </div>
           </div>
 
-          {showDrawingCanvas && (
-            <div className="drawing-tools">
-              <button onClick={() => setTool("line")}>{t('analyze.tool.line')}</button>
-              <button onClick={() => setTool("circle")}>{t('analyze.tool.circle')}</button>
-              <button onClick={() => setTool("none")}>{t('analyze.tool.none')}</button>
-              <button onClick={undoLastShape}>{t('analyze.tool.undo')}</button>
-              <button onClick={clearCanvas}>{t('analyze.tool.clear')}</button>
-            </div>
+          {workspaceMode === 'draw' && showDrawingCanvas && isMobile && (
+            <DrawingToolbar
+              selectedTool={tool === 'none' ? 'none' : (tool as 'line' | 'circle' | 'rectangle' | 'arrow' | 'eraser' | 'none')}
+              onToolChange={(newTool) => {
+                if (newTool === 'none') {
+                  setTool('none')
+                } else if (newTool === 'eraser') {
+                  setTool('none')
+                } else {
+                  setTool(newTool as 'line' | 'circle' | 'none')
+                }
+              }}
+              onDeleteSelected={deleteSelectedShape}
+              canDeleteSelected={Boolean(selectedShapeId)}
+              color={drawingColor}
+              onColorChange={setDrawingColor}
+              strokeWidth={drawingStrokeWidth}
+              onStrokeWidthChange={setDrawingStrokeWidth}
+              opacity={drawingOpacity}
+              onOpacityChange={setDrawingOpacity}
+            />
           )}
-                    {showDrawingCanvas && shapes.length > 0 && (
+
+                            {workspaceMode === 'draw' && showDrawingCanvas && isMobile && shapes.length > 0 && (
             <div className="shape-timeline-editor">
               <h3>{t('analyze.timeline.title')}</h3>
 
               <div className="shape-selector-list">
                 {shapes.map((shape, index) => (
-                  <button
-                    key={shape.id}
-                    type="button"
-                    className={selectedShapeId === shape.id ? 'active' : ''}
-                    onClick={() => setSelectedShapeId(shape.id)}
-                  >
-                    {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
-                  </button>
+                  <div key={shape.id} className="shape-chip">
+                    <button
+                      type="button"
+                      className={`shape-chip__select ${selectedShapeId === shape.id ? 'active' : ''}`}
+                      onClick={() => setSelectedShapeId(shape.id)}
+                    >
+                      {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
+                    </button>
+                    <button
+                      type="button"
+                      className="shape-chip__delete"
+                      onClick={() => deleteShapeById(shape.id)}
+                      aria-label={`${t('analyze.tool.delete')} ${index + 1}`}
+                      title={t('analyze.tool.delete')}
+                    >
+                      <span aria-hidden="true">🗑</span>
+                    </button>
+                  </div>
                 ))}
               </div>
 
@@ -821,7 +1008,7 @@ function Analyze({
             </div>
           )}
 
-          {videoLoaded && duration > 0 && (
+          {workspaceMode === 'segments' && isMobile && videoLoaded && duration > 0 && (
             <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
               <h3>{t('analyze.edit.title')}</h3>
               <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>

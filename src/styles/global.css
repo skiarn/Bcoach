@@ -1,3 +1,9 @@
+/* ====== Import New Component Styles ====== */
+@import './ui-components.css';
+@import './playback-toolbar.css';
+@import './drawing-toolbar.css';
+@import './responsive-layout.css';
+
 /* Global styles */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -1303,6 +1309,46 @@ body {
   border-color: #007bff;
 }
 
+.shape-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shape-chip__select {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.shape-chip__select.active {
+  background-color: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.shape-chip__delete {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #df7b85;
+  background: #ffebee;
+  color: #9b1c23;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.shape-chip__delete:hover {
+  background: #ffd7dd;
+}
+
 .shape-range-controls {
   display: grid;
   gap: 8px;
@@ -1744,19 +1790,39 @@ body {
 }
 
 .video-stage.is-fullscreen {
-  max-width: 100%;
+  max-width: none;
   width: 100%;
   height: 100%;
   border-radius: 0;
 }
 
-.video-player video {
+.video-stage:fullscreen,
+.video-stage:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  background: #000;
+}
+
+.video-stage:fullscreen .video-player,
+.video-stage:-webkit-full-screen .video-player {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-player__video {
   width: 100%;
   height: auto;
   display: block;
 }
 
-.video-stage.is-fullscreen .video-player video {
+.video-stage.is-fullscreen .video-player__video,
+.video-stage:fullscreen .video-player__video,
+.video-stage:-webkit-full-screen .video-player__video {
+  width: 100%;
   height: 100%;
   object-fit: contain;
 }
@@ -1767,15 +1833,16 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.35) 70%, transparent 100%);
-  padding: 36px 4px 4px;
-  opacity: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 68%, transparent 100%);
+  padding: 24px 6px 6px;
+  opacity: 1;
   transition: opacity 0.2s ease;
   z-index: 20;
   border-radius: 0 0 10px 10px;
 }
 
 .video-stage:hover .video-controls-overlay,
+.video-editor__player-wrap:hover .video-controls-overlay,
 .video-controls-overlay:focus-within {
   opacity: 1;
 }
@@ -1788,6 +1855,163 @@ body {
 .video-stage.is-fullscreen:hover .video-controls-overlay,
 .video-stage.is-fullscreen .video-controls-overlay:focus-within {
   opacity: 1;
+}
+
+.analyze-inline-tools {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.analyze-inline-tools button {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.analyze-inline-tools button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.52);
+}
+
+.analyze-inline-tools button.active {
+  background: rgba(0, 123, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.75);
+}
+
+.analyze-inline-tools button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.analyze-inline-draw-editor {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(8, 14, 26, 0.68);
+}
+
+.analyze-inline-draw-range-editor {
+  margin-top: 10px;
+}
+
+.analyze-inline-draw-range-editor h4 {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.analyze-inline-draw-range-editor .shape-selector-list {
+  margin-bottom: 8px;
+}
+
+.analyze-inline-draw-range-editor .shape-selector-list button {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.analyze-inline-draw-range-editor .shape-selector-list button.active {
+  background: rgba(0, 123, 255, 0.82);
+  border-color: rgba(255, 255, 255, 0.72);
+  color: #fff;
+}
+
+.analyze-inline-draw-range-editor .shape-chip__delete {
+  border-color: rgba(255, 161, 172, 0.85);
+  background: rgba(190, 35, 52, 0.42);
+  color: #fff0f2;
+}
+
+.analyze-inline-draw-range-editor .shape-chip__delete:hover {
+  background: rgba(190, 35, 52, 0.34);
+}
+
+.analyze-inline-draw-range-editor .shape-range-controls label {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.analyze-workspace-mode {
+  margin-top: 8px;
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.analyze-workspace-mode button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.analyze-workspace-mode button.active {
+  background: rgba(0, 123, 255, 0.86);
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+}
+
+.analyze-inline-segment-editor {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(8, 14, 26, 0.72);
+}
+
+.analyze-inline-segment-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.analyze-inline-error {
+  margin-top: 8px;
+  color: #ff9d9d;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 767px) {
+  .video-controls-overlay {
+    padding: 12px 4px 4px;
+    background: linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.68) 62%, transparent 100%);
+  }
+
+  .analyze-inline-tools {
+    display: none;
+  }
+
+  .analyze-workspace-mode {
+    width: 100%;
+    margin-top: 6px;
+    justify-content: space-between;
+  }
+
+  .analyze-workspace-mode button {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 6px 8px;
+  }
 }
 /* ===== Video Editor ===== */
 .video-editor {
