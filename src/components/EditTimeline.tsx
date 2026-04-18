@@ -6,6 +6,8 @@ interface EditTimelineProps {
   duration: number
   currentTime: number
   segments: VideoSegment[]
+  selectedSegmentId?: string | null
+  onSelectSegment?: (id: string | null) => void
   showFeedbackAction?: boolean
   onAddSegment: (startTime: number, endTime: number) => string
   onUpdateSegment: (
@@ -41,6 +43,8 @@ export default function EditTimeline({
   duration,
   currentTime,
   segments,
+  selectedSegmentId,
+  onSelectSegment,
   showFeedbackAction = false,
   onAddSegment,
   onUpdateSegment,
@@ -51,8 +55,20 @@ export default function EditTimeline({
   const trackRef = useRef<HTMLDivElement>(null)
   const [dragState, setDragState] = useState<DragState>(null)
   const [pendingSegment, setPendingSegment] = useState<{ startTime: number; endTime: number } | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const dragRef = useRef<DragState>(null)
+
+  const selectedId = selectedSegmentId !== undefined ? selectedSegmentId : internalSelectedId
+
+  const setSelectedId = useCallback(
+    (id: string | null) => {
+      if (selectedSegmentId === undefined) {
+        setInternalSelectedId(id)
+      }
+      onSelectSegment?.(id)
+    },
+    [selectedSegmentId, onSelectSegment]
+  )
 
   useEffect(() => {
     dragRef.current = dragState
@@ -84,7 +100,7 @@ export default function EditTimeline({
       setPendingSegment({ startTime: anchorTime, endTime: anchorTime })
       setSelectedId(null)
     },
-    [currentTime, duration]
+    [currentTime, duration, setSelectedId]
   )
 
   const handleTrackPointerMove = useCallback(
@@ -148,7 +164,7 @@ export default function EditTimeline({
 
       setDragState(null)
     },
-    [getTimeFromClientX, onAddSegment, onSeek]
+    [getTimeFromClientX, onAddSegment, onSeek, setSelectedId]
   )
 
   const handleSegmentPointerDown = useCallback(
@@ -170,7 +186,7 @@ export default function EditTimeline({
       const type = kind === 'handle-start' ? 'move-start' : 'move-end'
       setDragState({ type, id })
     },
-    [getTimeFromClientX, segments]
+    [getTimeFromClientX, segments, setSelectedId]
   )
 
   const selectedSegment = segments.find((s) => s.id === selectedId) ?? null

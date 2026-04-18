@@ -8,10 +8,7 @@ import PlaybackToolbar from '../components/PlaybackToolbar.tsx'
 import DrawingToolbar from '../components/DrawingToolbar.tsx'
 import AppNav from '../components/AppNav.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
-import DrawStepPanel from '../components/analyzeSteps/DrawStepPanel.tsx'
-import FeedbackStepPanel from '../components/analyzeSteps/FeedbackStepPanel.tsx'
-import NextStepsStepPanel from '../components/analyzeSteps/NextStepsStepPanel.tsx'
-import SaveStepPanel from '../components/analyzeSteps/SaveStepPanel.tsx'
+import SkillPicker from '../components/SkillPicker.tsx'
 import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
 import { AnalysisSegment, EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
@@ -22,7 +19,6 @@ import { useI18n } from '../i18n/I18nProvider.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
 import { useDeviceType } from '../hooks/useDeviceType.ts'
 import { applyVideoEdits } from '../utils/videoEditExport.ts'
-import { ANALYZE_STEP_ORDER, AnalyzeStep, getAnalyzeStepTitleKey } from './analyze/steps.ts'
 import { deriveLegacyFeedbackFromSegments, deriveLegacyNextStepsFromSegments } from '../utils/analysisMetadata.ts'
 
 interface VideoAnalysis {
@@ -182,48 +178,45 @@ function Analyze({
   const [drawingOpacity, setDrawingOpacity] = useState(1)
   const [customFeedback, setCustomFeedback] = useState<string[]>([])
   const [customNextSteps, setCustomNextSteps] = useState<string[]>([])
-  const [currentStep, setCurrentStep] = useState<AnalyzeStep>('draw')
   const [isSaved, setIsSaved] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [selectedSkillType, setSelectedSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
-  const [selectedSkillName, setSelectedSkillName] = useState<string>(derivedSkill?.name ?? '')
+  const [segmentSkillType, setSegmentSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
+  const [segmentSkillName, setSegmentSkillName] = useState<string>(derivedSkill?.name ?? '')
+  const [followPlayback, setFollowPlayback] = useState(true)
+  const SEGMENT_TIME_EPSILON = 0.08
 
   const fallbackFeedbackValues =
     customFeedback.length > 0 ? customFeedback : (existingAnalysis?.feedback ?? embeddedMetadata?.feedback ?? [])
-  const fallbackNextStepValues =
-    customNextSteps.length > 0 ? customNextSteps : (existingAnalysis?.nextSteps ?? embeddedMetadata?.nextSteps ?? [])
 
   const selectedAnalysisSegment = useMemo(
     () => analysisSegments.find((segment) => segment.id === selectedAnalysisSegmentId) ?? null,
     [analysisSegments, selectedAnalysisSegmentId]
   )
 
+  const playbackActiveSegment = useMemo(() => {
+    if (analysisSegments.length === 0) {
+      return null
+    }
+
+    const matchingSegments = analysisSegments.filter(
+      (segment) =>
+        currentTime + SEGMENT_TIME_EPSILON >= segment.startTime &&
+        currentTime - SEGMENT_TIME_EPSILON <= segment.endTime
+    )
+
+    return matchingSegments.length > 0 ? matchingSegments[matchingSegments.length - 1] : null
+  }, [analysisSegments, currentTime])
+
+  const playbackActiveSegmentId = playbackActiveSegment?.id ?? null
+
   const initialFeedbackValues = selectedAnalysisSegment?.feedback.checklist ?? fallbackFeedbackValues
-  const initialNextStepValues = selectedAnalysisSegment?.feedback.nextSteps ?? fallbackNextStepValues
 
   const rawVideoName = videoFile instanceof File
     ? videoFile.name
     : (location.state?.videoName || existingAnalysis?.videoName)
 
-  useEffect(() => {
-    if (!derivedSkill) {
-      return
-    }
-
-    setSelectedSkillType(derivedSkill.sportId)
-    setSelectedSkillName(derivedSkill.name)
-  }, [derivedSkill?.name, derivedSkill?.sportId])
-
-  const availableSkills = useMemo(
-    () => getSkills(locale).filter((entry) => entry.sportId === selectedSkillType),
-    [selectedSkillType, locale]
-  )
-
-  const skill = useMemo(
-    () => availableSkills.find((entry) => entry.name === selectedSkillName),
-    [availableSkills, selectedSkillName]
-  )
+  const skill = derivedSkill
 
   const sportLabel = useMemo(
     () => (skill?.sportId ? getSportLabel(skill.sportId, locale) : undefined),
@@ -492,28 +485,44 @@ function Analyze({
   }, [shapes, selectedShapeId])
 
   useEffect(() => {
-    if (currentStep !== 'draw' && showDrawingCanvas) {
-      setShowDrawingCanvas(false)
-    }
-
-    if (currentStep === 'draw' && workspaceMode === 'draw' && !showDrawingCanvas) {
+    if (workspaceMode === 'draw' && !showDrawingCanvas) {
       setShowDrawingCanvas(true)
     }
 
-    if (currentStep === 'draw' && workspaceMode === 'segments' && showDrawingCanvas) {
+    if (workspaceMode === 'segments' && showDrawingCanvas) {
       setShowDrawingCanvas(false)
     }
 
-    if (currentStep !== 'draw' && workspaceMode !== 'draw') {
-      setWorkspaceMode('draw')
-    }
-
-    if (currentStep !== 'draw' && document.fullscreenElement === videoContainerRef.current) {
+    if (workspaceMode === 'segments' && document.fullscreenElement === videoContainerRef.current) {
       void document.exitFullscreen().catch(() => {
-        // Ignore exit fullscreen failure when leaving draw step.
+        // Ignore exit fullscreen failure when leaving draw mode.
       })
     }
-  }, [currentStep, showDrawingCanvas, workspaceMode])
+  }, [showDrawingCanvas, workspaceMode])
+
+  const segmentAvailableSkills = useMemo(
+    () => getSkills(locale).filter((entry) => entry.sportId === segmentSkillType),
+    [locale, segmentSkillType]
+  )
+
+  const selectedSegmentSkill = useMemo(
+    () => segmentAvailableSkills.find((entry) => entry.name === segmentSkillName),
+    [segmentAvailableSkills, segmentSkillName]
+  )
+
+  useEffect(() => {
+    if (!selectedAnalysisSegment) {
+      setSegmentSkillType(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
+      setSegmentSkillName(derivedSkill?.name ?? '')
+      return
+    }
+
+    const segmentSkill = findSkillById(selectedAnalysisSegment.skillId, locale) ??
+      getSkills(locale).find((entry) => entry.name === selectedAnalysisSegment.skillName)
+
+    setSegmentSkillType(segmentSkill?.sportId ?? derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
+    setSegmentSkillName(segmentSkill?.name ?? selectedAnalysisSegment.skillName ?? '')
+  }, [selectedAnalysisSegment, locale, derivedSkill?.sportId, derivedSkill?.name])
 
   const updateSelectedShapeRange = (field: 'visibleFrom' | 'visibleTo', value: number) => {
     if (!selectedShapeId) return
@@ -584,8 +593,8 @@ function Analyze({
           id,
           startTime,
           endTime,
-          skillId: skill?.id,
-          skillName: skill?.name,
+          skillId: selectedSegmentSkill?.id ?? skill?.id,
+          skillName: selectedSegmentSkill?.name ?? skill?.name,
           attemptIndex: previous.length + 1,
           feedback: createSegmentFeedback(customFeedback, customNextSteps),
         },
@@ -674,8 +683,13 @@ function Analyze({
     )
   }
 
-  const handleSegmentNextStepsChange = (nextStepItems: string[]) => {
-    setCustomNextSteps(nextStepItems)
+  const handleSegmentSkillTypeChange = (nextSkillType: string) => {
+    setSegmentSkillType(nextSkillType)
+
+    const nextSkill = getSkills(locale).find((entry) => entry.sportId === nextSkillType && entry.name === segmentSkillName)
+    if (!nextSkill) {
+      setSegmentSkillName('')
+    }
 
     if (!selectedAnalysisSegmentId) {
       return
@@ -690,10 +704,34 @@ function Analyze({
 
           return {
             ...segment,
-            feedback: {
-              ...segment.feedback,
-              nextSteps: nextStepItems,
-            },
+            skillId: nextSkill?.id,
+            skillName: nextSkill?.name,
+          }
+        })
+      )
+    )
+  }
+
+  const handleSegmentSkillNameChange = (nextSkillName: string) => {
+    setSegmentSkillName(nextSkillName)
+
+    const nextSkill = getSkills(locale).find((entry) => entry.sportId === segmentSkillType && entry.name === nextSkillName)
+
+    if (!selectedAnalysisSegmentId) {
+      return
+    }
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== selectedAnalysisSegmentId) {
+            return segment
+          }
+
+          return {
+            ...segment,
+            skillId: nextSkill?.id,
+            skillName: nextSkill?.name,
           }
         })
       )
@@ -863,23 +901,7 @@ function Analyze({
     void saveAnalysisToLibrary(shapes)
   };
 
-  const stepOrder = ANALYZE_STEP_ORDER
-  const stepIndex = stepOrder.indexOf(currentStep)
-  const showVideoWorkspace = currentStep === 'draw'
-
-  const goToPreviousStep = () => {
-    if (stepIndex <= 0) return
-    setCurrentStep(stepOrder[stepIndex - 1])
-  }
-
-  const goToNextStep = () => {
-    if (stepIndex >= stepOrder.length - 1) return
-    setCurrentStep(stepOrder[stepIndex + 1])
-  }
-
-  const getStepTitle = () => {
-    return t(getAnalyzeStepTitleKey(currentStep))
-  }
+  const showVideoWorkspace = true
 
   const getHomeSelectionSearch = (): string => {
     if (!skill) return ''
@@ -915,14 +937,15 @@ function Analyze({
         <p className="analyze-segment-selector__title">{t('analyze.segmentSelector.title')}</p>
         <div className="analyze-segment-selector__chips">
           {analysisSegments.map((segment, index) => {
-            const isActive = segment.id === selectedAnalysisSegmentId
+            const isSelected = segment.id === selectedAnalysisSegmentId
+            const isPlaybackActive = segment.id === playbackActiveSegmentId
 
             return (
               <button
                 key={segment.id}
                 type="button"
                 onClick={() => handleSelectAnalysisSegment(segment.id)}
-                className={`analyze-segment-selector__chip ${isActive ? 'active' : ''}`}
+                className={`analyze-segment-selector__chip ${isSelected ? 'selected' : ''} ${isPlaybackActive ? 'active' : ''}`.trim()}
               >
                 {t('analyze.segmentSelector.item', {
                   index: index + 1,
@@ -934,17 +957,28 @@ function Analyze({
           })}
         </div>
 
-        {showPauseButton && selectedAnalysisSegment && (
+        <div className="analyze-segment-selector__controls">
           <button
             type="button"
-            className="analyze-segment-selector__pause"
-            onClick={() => handleSelectAnalysisSegment(selectedAnalysisSegment.id, true)}
+            className={`analyze-segment-selector__btn analyze-segment-selector__btn--follow ${followPlayback ? 'active' : ''}`.trim()}
+            aria-pressed={followPlayback}
+            onClick={() => setFollowPlayback((previous) => !previous)}
           >
-            {t('analyze.segmentSelector.pauseAt', {
-              time: formatTime(selectedAnalysisSegment.startTime),
-            })}
+            {t('analyze.segmentSelector.followPlayback')}
           </button>
-        )}
+
+          {showPauseButton && selectedAnalysisSegment && (
+            <button
+              type="button"
+              className="analyze-segment-selector__btn analyze-segment-selector__btn--pause"
+              onClick={() => handleSelectAnalysisSegment(selectedAnalysisSegment.id, true)}
+            >
+              {t('analyze.segmentSelector.pauseAt', {
+                time: formatTime(selectedAnalysisSegment.startTime),
+              })}
+            </button>
+          )}
+        </div>
       </div>
     )
   }
@@ -954,17 +988,71 @@ function Analyze({
       return null
     }
 
+    const shouldShowLivePlaybackFeedback = followPlayback && isPlaying
+    const feedbackDisplaySegment = followPlayback
+      ? (playbackActiveSegment ?? selectedAnalysisSegment)
+      : selectedAnalysisSegment
+    const feedbackItems = feedbackDisplaySegment
+      ? [...feedbackDisplaySegment.feedback.checklist, ...feedbackDisplaySegment.feedback.notes]
+      : []
+
     return (
       <div className="analyze-inline-segment-feedback">
         {renderSegmentSelector(true)}
-        {selectedAnalysisSegment ? (
+
+        {selectedAnalysisSegment && (
+          <div className="analyze-segment-skill-picker">
+            <SkillPicker
+              label={t('home.skillPickerLabel')}
+              selectedSkillType={segmentSkillType}
+              selectedSkillName={segmentSkillName}
+              onSkillTypeChange={handleSegmentSkillTypeChange}
+              onSkillNameChange={handleSegmentSkillNameChange}
+              allowDeselect={true}
+              collapseTypeSelectorWhenSelected={true}
+              helperText={t('analyze.nextSteps.skillLabel')}
+              className="analyze-segment-skill-picker__inner"
+            />
+          </div>
+        )}
+
+        {shouldShowLivePlaybackFeedback ? (
+          <section className="analyze-live-feedback" aria-live="polite">
+            {feedbackDisplaySegment ? (
+              <>
+                <p className="analyze-live-feedback__label">
+                  {t('analyze.segmentSelector.item', {
+                    index: feedbackDisplaySegment.attemptIndex,
+                    start: formatTime(feedbackDisplaySegment.startTime),
+                    end: formatTime(feedbackDisplaySegment.endTime),
+                  })}
+                </p>
+
+                <div className="analyze-live-feedback__columns">
+                  <div>
+                    <h4>{t('feedback.title')}</h4>
+                    {feedbackItems.length > 0 ? (
+                      <ul>
+                        {feedbackItems.map((item, index) => (
+                          <li key={`${feedbackDisplaySegment.id}-feedback-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{t('history.feedbackEmpty')}</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="analyze-live-feedback__empty">{t('analyze.segmentSelector.empty')}</p>
+            )}
+          </section>
+        ) : selectedAnalysisSegment ? (
           <FeedbackPanel
-            skill={skill}
-            mode="all"
+            skill={selectedSegmentSkill}
+            mode="feedback"
             initialFeedback={selectedAnalysisSegment.feedback.checklist}
-            initialNextSteps={selectedAnalysisSegment.feedback.nextSteps}
             onFeedbackChange={handleSegmentFeedbackChange}
-            onNextStepsChange={handleSegmentNextStepsChange}
           />
         ) : null}
       </div>
@@ -979,13 +1067,6 @@ function Analyze({
         <h1>{t('analyze.title', { videoName })}</h1>
         <div></div>
       </header>
-
-      <div className="analyze-stepper" style={{ marginBottom: '16px' }}>
-        <div className={`analyze-step ${currentStep === 'draw' ? 'active' : ''}`}>1. {t('analyze.step1')}</div>
-        <div className={`analyze-step ${currentStep === 'feedback' ? 'active' : ''}`}>2. {t('analyze.step2')}</div>
-        <div className={`analyze-step ${currentStep === 'nextSteps' ? 'active' : ''}`}>3. {t('analyze.step3')}</div>
-        <div className={`analyze-step ${currentStep === 'save' ? 'active' : ''}`}>4. {t('analyze.step4')}</div>
-      </div>
 
       <div style={{ position: 'relative', display: 'block' }}>
         {/* Video Section */}
@@ -1041,194 +1122,68 @@ function Analyze({
                 />
               </div>
             )}
+          </div>
 
-            <div className="video-controls-overlay">
-              <PlaybackToolbar
-                isPlaying={isPlaying}
-                currentTime={currentTime}
-                duration={duration}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onSeek={handleSeek}
-                videoLoaded={videoLoaded}
-                onToggleFullscreen={handleToggleFullscreen}
-                isFullscreen={isFullscreen}
-              />
+          <div className="analyze-workspace-controls">
+            <PlaybackToolbar
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              duration={duration}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onSeek={handleSeek}
+              videoLoaded={videoLoaded}
+              onToggleFullscreen={handleToggleFullscreen}
+              isFullscreen={isFullscreen}
+            />
 
-              <div className="analyze-workspace-mode" role="tablist" aria-label="Workspace mode">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={workspaceMode === 'segments'}
-                  className={workspaceMode === 'segments' ? 'active' : ''}
-                  onClick={() => {
-                    setWorkspaceMode('segments')
-                    setShowDrawingCanvas(false)
-                  }}
-                >
-                  {t('analyze.edit.title')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={workspaceMode === 'draw'}
-                  className={workspaceMode === 'draw' ? 'active' : ''}
-                  onClick={() => {
-                    setWorkspaceMode('draw')
-                    setShowDrawingCanvas(true)
-                  }}
-                >
-                  {t('analyze.step1')}
-                </button>
-                
-              </div>
-
-              {workspaceMode === 'segments' && !isMobile && videoLoaded && duration > 0 && (
-                <div className="analyze-inline-segment-editor">
-                  <EditTimeline
-                    duration={duration}
-                    currentTime={currentTime}
-                    segments={segments}
-                    showFeedbackAction={true}
-                    onAddSegment={handleAddAnalysisSegment}
-                    onUpdateSegment={handleUpdateAnalysisSegment}
-                    onRemoveSegment={handleRemoveAnalysisSegment}
-                    onSeek={handleSeek}
-                  />
-
-                  <div className="analyze-inline-segment-actions">
-                    <button
-                      type="button"
-                      className="analyze-inline-btn analyze-inline-btn--apply"
-                      onClick={() => void applySegmentEdits()}
-                      disabled={segments.length === 0 || isApplyingEdits}
-                    >
-                      {isApplyingEdits
-                        ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
-                        : t('analyze.edit.apply')}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="analyze-inline-btn"
-                      onClick={handleClearAnalysisSegments}
-                      disabled={segments.length === 0 || isApplyingEdits}
-                    >
-                      {t('editor.clearSegments')}
-                    </button>
-                  </div>
-
-                  {editError && <p className="analyze-inline-error">{editError}</p>}
-                  {renderInlineSegmentFeedbackEditor()}
-                </div>
-              )}
-              {workspaceMode === 'draw' && showDrawingCanvas && !isMobile && (
-                <div className="analyze-inline-draw-editor">
-                  <div className="analyze-inline-tools" role="toolbar" aria-label="Drawing tools">
-                    <button
-                      type="button"
-                      className={tool === 'line' ? 'active' : ''}
-                      onClick={() => setTool('line')}
-                    >
-                      {t('analyze.tool.line')}
-                    </button>
-                    <button
-                      type="button"
-                      className={tool === 'circle' ? 'active' : ''}
-                      onClick={() => setTool('circle')}
-                    >
-                      {t('analyze.tool.circle')}
-                    </button>
-                    <button
-                      type="button"
-                      className={tool === 'none' ? 'active' : ''}
-                      onClick={() => setTool('none')}
-                    >
-                      {t('analyze.tool.none')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={deleteSelectedShape}
-                      disabled={!selectedShapeId}
-                    >
-                      {t('analyze.tool.delete')}
-                    </button>
-                  </div>
-
-                  {shapes.length > 0 && (
-                    <div className="analyze-inline-draw-range-editor">
-                      <h4>{t('analyze.timeline.title')}</h4>
-
-                      <div className="shape-selector-list">
-                        {shapes.map((shape, index) => (
-                          <div key={shape.id} className="shape-chip">
-                            <button
-                              type="button"
-                              className={`shape-chip__select ${selectedShapeId === shape.id ? 'active' : ''}`}
-                              onClick={() => setSelectedShapeId(shape.id)}
-                            >
-                              {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
-                            </button>
-                            <button
-                              type="button"
-                              className="shape-chip__delete"
-                              onClick={() => deleteShapeById(shape.id)}
-                              aria-label={`${t('analyze.tool.delete')} ${index + 1}`}
-                              title={t('analyze.tool.delete')}
-                            >
-                              <span aria-hidden="true">🗑</span>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedShape && (
-                        <div className="shape-range-controls">
-                          <label>
-                            {t('analyze.timeline.start', { time: formatTime(selectedShape.visibleFrom ?? 0) })}
-                            <input
-                              type="range"
-                              min={0}
-                              max={duration || 0}
-                              step={0.1}
-                              value={selectedShape.visibleFrom ?? 0}
-                              onChange={(e) => updateSelectedShapeRange('visibleFrom', Number(e.target.value))}
-                              disabled={duration <= 0}
-                            />
-                          </label>
-
-                          <label>
-                            {t('analyze.timeline.end', { time: formatTime(selectedShape.visibleTo ?? duration) })}
-                            <input
-                              type="range"
-                              min={0}
-                              max={duration || 0}
-                              step={0.1}
-                              value={selectedShape.visibleTo ?? duration}
-                              onChange={(e) => updateSelectedShapeRange('visibleTo', Number(e.target.value))}
-                              disabled={duration <= 0}
-                            />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              
+            <div className="analyze-workspace-mode" role="tablist" aria-label="Workspace mode">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={workspaceMode === 'segments'}
+                className={workspaceMode === 'segments' ? 'active' : ''}
+                onClick={() => {
+                  setWorkspaceMode('segments')
+                  setShowDrawingCanvas(false)
+                }}
+              >
+                {t('analyze.edit.title')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={workspaceMode === 'draw'}
+                className={workspaceMode === 'draw' ? 'active' : ''}
+                onClick={() => {
+                  setWorkspaceMode('draw')
+                  setShowDrawingCanvas(true)
+                }}
+              >
+                {t('analyze.step1')}
+              </button>
             </div>
           </div>
 
-           {workspaceMode === 'segments' && isMobile && videoLoaded && duration > 0 && (
-            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
-              <h3>{t('analyze.edit.title')}</h3>
-              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+          {workspaceMode === 'segments' && videoLoaded && duration > 0 && (
+            <div className={isMobile ? 'shape-timeline-editor' : 'analyze-inline-segment-editor'} style={isMobile ? { marginTop: '14px' } : undefined}>
+              {isMobile && (
+                <>
+                  <h3>{t('analyze.edit.title')}</h3>
+                  <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+                </>
+              )}
 
               <EditTimeline
                 duration={duration}
                 currentTime={currentTime}
                 segments={segments}
+                selectedSegmentId={selectedAnalysisSegmentId}
+                onSelectSegment={(segmentId) => {
+                  if (segmentId) {
+                    handleSelectAnalysisSegment(segmentId)
+                  }
+                }}
                 showFeedbackAction={true}
                 onAddSegment={handleAddAnalysisSegment}
                 onUpdateSegment={handleUpdateAnalysisSegment}
@@ -1236,7 +1191,7 @@ function Analyze({
                 onSeek={handleSeek}
               />
 
-              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="analyze-inline-segment-actions">
                 <button
                   type="button"
                   className="analyze-inline-btn analyze-inline-btn--apply"
@@ -1259,13 +1214,13 @@ function Analyze({
               </div>
 
               {editError && (
-                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
+                <p className="analyze-inline-error">{editError}</p>
               )}
 
               {renderInlineSegmentFeedbackEditor()}
             </div>
           )}
-          
+
           {workspaceMode === 'draw' && showDrawingCanvas && isMobile && (
             <DrawingToolbar
               selectedTool={tool === 'none' ? 'none' : (tool as 'line' | 'circle' | 'rectangle' | 'arrow' | 'eraser' | 'none')}
@@ -1287,6 +1242,100 @@ function Analyze({
               opacity={drawingOpacity}
               onOpacityChange={setDrawingOpacity}
             />
+          )}
+
+          {workspaceMode === 'draw' && showDrawingCanvas && !isMobile && (
+            <div className="analyze-inline-draw-editor">
+              <div className="analyze-inline-tools" role="toolbar" aria-label="Drawing tools">
+                <button
+                  type="button"
+                  className={tool === 'line' ? 'active' : ''}
+                  onClick={() => setTool('line')}
+                >
+                  {t('analyze.tool.line')}
+                </button>
+                <button
+                  type="button"
+                  className={tool === 'circle' ? 'active' : ''}
+                  onClick={() => setTool('circle')}
+                >
+                  {t('analyze.tool.circle')}
+                </button>
+                <button
+                  type="button"
+                  className={tool === 'none' ? 'active' : ''}
+                  onClick={() => setTool('none')}
+                >
+                  {t('analyze.tool.none')}
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteSelectedShape}
+                  disabled={!selectedShapeId}
+                >
+                  {t('analyze.tool.delete')}
+                </button>
+              </div>
+
+              {shapes.length > 0 && (
+                <div className="analyze-inline-draw-range-editor">
+                  <h4>{t('analyze.timeline.title')}</h4>
+
+                  <div className="shape-selector-list">
+                    {shapes.map((shape, index) => (
+                      <div key={shape.id} className="shape-chip">
+                        <button
+                          type="button"
+                          className={`shape-chip__select ${selectedShapeId === shape.id ? 'active' : ''}`}
+                          onClick={() => setSelectedShapeId(shape.id)}
+                        >
+                          {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
+                        </button>
+                        <button
+                          type="button"
+                          className="shape-chip__delete"
+                          onClick={() => deleteShapeById(shape.id)}
+                          aria-label={`${t('analyze.tool.delete')} ${index + 1}`}
+                          title={t('analyze.tool.delete')}
+                        >
+                          <span aria-hidden="true">🗑</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedShape && (
+                    <div className="shape-range-controls">
+                      <label>
+                        {t('analyze.timeline.start', { time: formatTime(selectedShape.visibleFrom ?? 0) })}
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 0}
+                          step={0.1}
+                          value={selectedShape.visibleFrom ?? 0}
+                          onChange={(e) => updateSelectedShapeRange('visibleFrom', Number(e.target.value))}
+                          disabled={duration <= 0}
+                        />
+                      </label>
+
+                      <label>
+                        {t('analyze.timeline.end', { time: formatTime(selectedShape.visibleTo ?? duration) })}
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 0}
+                          step={0.1}
+                          value={selectedShape.visibleTo ?? duration}
+                          onChange={(e) => updateSelectedShapeRange('visibleTo', Number(e.target.value))}
+                          disabled={duration <= 0}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {workspaceMode === 'draw' && showDrawingCanvas && isMobile && shapes.length > 0 && (
@@ -1348,107 +1397,53 @@ function Analyze({
             </div>
           )}
 
-         
+
           </div>
         )}
 
-        {/* Focused Step Section */}
         <div style={{ width: '100%', marginTop: showVideoWorkspace ? '16px' : '0' }}>
           <div className="analyze-step-panel">
-            {currentStep !== 'draw' && <h3>{getStepTitle()}</h3>}
-
-            {currentStep === 'draw' && (
-              <DrawStepPanel
-                title={getStepTitle()}
-                help={t('analyze.draw.help')}
-                tip={t('analyze.draw.tip')}
-              />
-            )}
-
-            {currentStep === 'feedback' && (
-              <>
-                {renderSegmentSelector(false)}
-                <FeedbackStepPanel
-                  skill={skill}
-                  initialFeedback={initialFeedbackValues}
-                  initialNextSteps={initialNextStepValues}
-                  onFeedbackChange={handleSegmentFeedbackChange}
-                  onNextStepsChange={handleSegmentNextStepsChange}
-                />
-              </>
-            )}
-
-            {currentStep === 'nextSteps' && (
-              <>
-                {renderSegmentSelector(false)}
-                <NextStepsStepPanel
-                  skill={skill}
-                  skillLabel={t('analyze.nextSteps.skillLabel')}
-                  selectedSkillType={selectedSkillType}
-                  selectedSkillName={selectedSkillName}
-                  initialFeedback={initialFeedbackValues}
-                  initialNextSteps={initialNextStepValues}
-                  onSkillTypeChange={setSelectedSkillType}
-                  onSkillNameChange={setSelectedSkillName}
-                  onFeedbackChange={handleSegmentFeedbackChange}
-                  onNextStepsChange={handleSegmentNextStepsChange}
-                />
-              </>
-            )}
-
-            {currentStep === 'save' && (
-              <SaveStepPanel
-                isSaved={isSaved}
-                saveError={saveError}
-                feedbackCountLabel={t('analyze.save.feedbackPoints', {
-                  count: analysisSegments.length > 0
-                    ? deriveLegacyFeedbackFromSegments(analysisSegments).length
-                    : initialFeedbackValues.length,
-                })}
-                nextStepsCountLabel={t('analyze.save.nextSteps', {
-                  count: analysisSegments.length > 0
-                    ? deriveLegacyNextStepsFromSegments(analysisSegments).length
-                    : initialNextStepValues.length,
-                })}
-                readyLabel={t('analyze.save.ready')}
-                helpLabel={t('analyze.save.help')}
-                savedTitleLabel={t('analyze.saved.title')}
-                savedBodyLabel={t('analyze.saved.body')}
-                savedCtaLabel={t('analyze.saved.cta')}
-                onNavigateHome={handleNavigateToHome}
-              />
-            )}
-
             <div className="analyze-step-actions">
-              <button type="button" onClick={goToPreviousStep} disabled={stepIndex === 0}>
-                ← {t('analyze.prev')}
+              <button type="button" onClick={onBack}>
+                ← {t('common.back')}
               </button>
-              {currentStep === 'save' ? (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={quickSaveAnalysis}
-                    disabled={isSaved || isExporting}
-                    title={t('analyze.quickSave.title')}
-                  >
-                    {isExporting ? t('analyze.saving') : `💾 ${t('analyze.quickSave')}`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveAnalysis}
-                    className="analyze-save-cta"
-                    disabled={isSaved || isExporting}
-                    title={t('analyze.export.title')}
-                  >
-                    {isSaved ? t('analyze.exported') : isExporting ? t('analyze.exporting') : `⬇️ ${t('analyze.export')}`}
-                  </button>
-                </div>
-              ) : (
-                <button type="button" onClick={goToNextStep} disabled={stepIndex === stepOrder.length - 1}>
-                  {t('analyze.next')} →
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={quickSaveAnalysis}
+                disabled={isExporting}
+                title={t('analyze.quickSave.title')}
+              >
+                {isExporting ? t('analyze.saving') : `💾 ${t('analyze.quickSave')}`}
+              </button>
+              <button
+                type="button"
+                onClick={saveAnalysis}
+                className="analyze-save-cta"
+                disabled={isExporting}
+                title={t('analyze.export.title')}
+              >
+                {isSaved ? t('analyze.exported') : isExporting ? t('analyze.exporting') : `⬇️ ${t('analyze.export')}`}
+              </button>
+              <button type="button" onClick={handleNavigateToHome}>
+                {t('analyze.saved.cta')}
+              </button>
             </div>
+
+            {saveError && <p className="analyze-inline-error">{saveError}</p>}
+
+            <p style={{ marginTop: '10px', color: '#475569' }}>
+              {t('analyze.save.feedbackPoints', {
+                count: analysisSegments.length > 0
+                  ? deriveLegacyFeedbackFromSegments(analysisSegments).length
+                  : initialFeedbackValues.length,
+              })}
+            </p>
+
+            {isSaved && (
+              <p style={{ marginTop: '6px', color: '#166534', fontWeight: 600 }}>
+                {t('analyze.saved.title')}
+              </p>
+            )}
           </div>
         </div>
       </div>
