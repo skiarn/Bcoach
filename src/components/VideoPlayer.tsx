@@ -17,7 +17,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           controls={false}
           onTimeUpdate={onTimeUpdate}
           onLoadedMetadata={onLoadedMetadata}
-          style={{ width: '100%', height: 'auto', display: 'block' }}
+          className="video-player__video"
         />
       </div>
     )

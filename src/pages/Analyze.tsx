@@ -3,20 +3,23 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import VideoPlayer from '../components/VideoPlayer.tsx'
 import DrawingCanvas from '../components/DrawingCanvas.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
-import Controls from '../components/Controls.tsx'
 import FeedbackPanel from '../components/FeedbackPanel.tsx'
-import SkillPicker from '../components/SkillPicker.tsx'
+import PlaybackToolbar from '../components/PlaybackToolbar.tsx'
+import DrawingToolbar from '../components/DrawingToolbar.tsx'
 import AppNav from '../components/AppNav.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
+import SkillPicker from '../components/SkillPicker.tsx'
+import VideoFeedbackOverlay from '../components/VideoFeedbackOverlay.tsx'
 import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
-import { EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
+import { AnalysisSegment, EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
 import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
-import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
+import { addExportedVideoBlob } from '../services/videoLibrary.ts'
 import { DEFAULT_SPORT_ID, getSportLabel } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
-import { applyVideoEdits } from '../utils/videoEditExport.ts'
+import { useDeviceType } from '../hooks/useDeviceType.ts'
+import { deriveLegacyFeedbackFromSegments, deriveLegacyNextStepsFromSegments } from '../utils/analysisMetadata.ts'
 
 interface VideoAnalysis {
   id: string
@@ -38,26 +41,26 @@ interface AnalyzeProps {
   libraryId?: string
   embeddedMetadata?: EmbeddedAnalysisMetadata
   onBack: () => void
+  onNavigateHome?: () => void
 }
 
 type Tool = "line" | "circle" | "none";
-type AnalyzeStep = 'draw' | 'feedback' | 'nextSteps' | 'save'
 
 function Analyze({
   videoUrl: propVideoUrl,
   videoFile: propVideoFile,
-  libraryId: propLibraryId,
   embeddedMetadata: propEmbeddedMetadata,
   onBack,
+  onNavigateHome,
 }: AnalyzeProps): JSX.Element {
   const { t, locale } = useI18n()
+  const deviceType = useDeviceType()
+  const isMobile = deviceType === 'mobile'
   const navigate = useNavigate()
   const location = useLocation()
   const stateSkill: Skill | undefined = location.state?.skill
   const existingAnalysis = location.state?.analysis as VideoAnalysis | undefined
   const routeEmbeddedMetadata = location.state?.embeddedMetadata as EmbeddedAnalysisMetadata | undefined
-  const routeLibraryId = location.state?.libraryId as string | undefined
-  const libraryId = propLibraryId ?? routeLibraryId
   const embeddedMetadata = propEmbeddedMetadata ?? routeEmbeddedMetadata
   const metadataSkill = useMemo(
     () => findSkillById(embeddedMetadata?.skillId, locale) ?? findSkill(embeddedMetadata?.skillName, embeddedMetadata?.sportId ?? embeddedMetadata?.skillType, locale),
@@ -76,10 +79,44 @@ function Analyze({
     videoFile instanceof Blob ? videoFile : null
   )
   const [stableVideoUrl, setStableVideoUrl] = useState<string>('')
-  const [isApplyingEdits, setIsApplyingEdits] = useState(false)
-  const [editProgress, setEditProgress] = useState(0)
-  const [editError, setEditError] = useState<string | null>(null)
-  const { segments, addSegment, updateSegment, removeSegment, clearSegments } = useVideoSegments()
+  const { segments, addSegment, updateSegment, removeSegment, replaceSegments } = useVideoSegments()
+  const [analysisSegments, setAnalysisSegments] = useState<AnalysisSegment[]>([])
+  const [selectedAnalysisSegmentId, setSelectedAnalysisSegmentId] = useState<string | null>(null)
+
+  const createSegmentFeedback = (feedbackItems: string[], nextStepItems: string[]) => ({
+    checklist: feedbackItems,
+    notes: [],
+    nextSteps: nextStepItems,
+  })
+
+  const toSortedAnalysisSegments = (nextSegments: AnalysisSegment[]): AnalysisSegment[] =>
+    [...nextSegments]
+      .sort((a, b) => a.startTime - b.startTime)
+      .map((segment, index) => ({
+        ...segment,
+        attemptIndex: index + 1,
+      }))
+
+  const syncSegmentFeedbackDefaults = (
+    nextSegments: AnalysisSegment[],
+    feedbackItems: string[],
+    nextStepItems: string[]
+  ): AnalysisSegment[] =>
+    nextSegments.map((segment) => {
+      const hasUserSegmentFeedback =
+        segment.feedback.checklist.length > 0 ||
+        segment.feedback.notes.length > 0 ||
+        segment.feedback.nextSteps.length > 0
+
+      if (hasUserSegmentFeedback) {
+        return segment
+      }
+
+      return {
+        ...segment,
+        feedback: createSegmentFeedback(feedbackItems, nextStepItems),
+      }
+    })
 
   useEffect(() => {
     if (videoFile instanceof Blob) {
@@ -107,11 +144,6 @@ function Analyze({
     return (
       <div className="analyze">
         <AppNav />
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button onClick={onBack}>← {t('common.back')}</button>
-          <h1>{t('analyze.titleNoVideo')}</h1>
-          <div></div>
-        </header>
         <p>{t('analyze.noVideo')}</p>
       </div>
     )
@@ -119,7 +151,6 @@ function Analyze({
   const videoRef = useRef<HTMLVideoElement>(null)
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [videoDisplayWidth, setVideoDisplayWidth] = useState(0)
@@ -127,45 +158,84 @@ function Analyze({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [videoLoaded, setVideoLoaded] = useState(false)
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
+  const [workspaceMode, setWorkspaceMode] = useState<'draw' | 'segments'>('segments')
   const [tool, setTool] = useState<Tool>("line");
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null)
+  const [drawingColor, setDrawingColor] = useState('#ff0000')
+  const [drawingStrokeWidth, setDrawingStrokeWidth] = useState(2)
+  const [drawingOpacity, setDrawingOpacity] = useState(1)
   const [customFeedback, setCustomFeedback] = useState<string[]>([])
   const [customNextSteps, setCustomNextSteps] = useState<string[]>([])
-  const [currentStep, setCurrentStep] = useState<AnalyzeStep>('draw')
   const [isSaved, setIsSaved] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [selectedSkillType, setSelectedSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
-  const [selectedSkillName, setSelectedSkillName] = useState<string>(derivedSkill?.name ?? '')
+  const [segmentSkillType, setSegmentSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
+  const [segmentSkillName, setSegmentSkillName] = useState<string>(derivedSkill?.name ?? '')
+  const [followPlayback, setFollowPlayback] = useState(true)
+  const [isVideoFeedbackOverlayEnabled, setIsVideoFeedbackOverlayEnabled] = useState(true)
+
+  const selectedAnalysisSegment = useMemo(
+    () => analysisSegments.find((segment) => segment.id === selectedAnalysisSegmentId) ?? null,
+    [analysisSegments, selectedAnalysisSegmentId]
+  )
+
+  const playbackActiveSegment = useMemo(() => {
+    if (analysisSegments.length === 0) {
+      return null
+    }
+
+    const matchingSegments = analysisSegments
+      .filter((segment) => currentTime >= segment.startTime && currentTime < segment.endTime)
+      .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime)
+
+    return matchingSegments.length > 0 ? matchingSegments[matchingSegments.length - 1] : null
+  }, [analysisSegments, currentTime])
+
+  const playbackActiveSegmentId = playbackActiveSegment?.id ?? null
+  const feedbackDisplaySegment = followPlayback
+    ? (playbackActiveSegment ?? selectedAnalysisSegment)
+    : selectedAnalysisSegment
+  const videoOverlaySegment = playbackActiveSegment
+  const feedbackOverlayItems = videoOverlaySegment
+    ? [...videoOverlaySegment.feedback.checklist, ...videoOverlaySegment.feedback.notes]
+    : []
+  const feedbackOverlayNextSteps = videoOverlaySegment?.feedback.nextSteps ?? []
+  const shouldShowVideoFeedbackOverlay =
+    workspaceMode === 'segments' &&
+    isVideoFeedbackOverlayEnabled &&
+    Boolean(videoOverlaySegment) &&
+    (feedbackOverlayItems.length > 0 || feedbackOverlayNextSteps.length > 0)
+
+  const runtimePlaybackEdits = useMemo(
+    () => segments.filter((segment) => segment.action === 'remove' || segment.action === 'speed'),
+    [segments]
+  )
 
   const rawVideoName = videoFile instanceof File
     ? videoFile.name
     : (location.state?.videoName || existingAnalysis?.videoName)
 
-  useEffect(() => {
-    if (!derivedSkill) {
-      return
-    }
-
-    setSelectedSkillType(derivedSkill.sportId)
-    setSelectedSkillName(derivedSkill.name)
-  }, [derivedSkill?.name, derivedSkill?.sportId])
-
-  const availableSkills = useMemo(
-    () => getSkills(locale).filter((entry) => entry.sportId === selectedSkillType),
-    [selectedSkillType, locale]
-  )
-
-  const skill = useMemo(
-    () => availableSkills.find((entry) => entry.name === selectedSkillName),
-    [availableSkills, selectedSkillName]
-  )
+  const skill = derivedSkill
 
   const sportLabel = useMemo(
     () => (skill?.sportId ? getSportLabel(skill.sportId, locale) : undefined),
     [skill?.sportId, locale]
   )
+
+  const exportSportLabel = useMemo(() => {
+    if (sportLabel?.trim()) {
+      return sportLabel
+    }
+
+    const fallbackSportId =
+      segmentSkillType ||
+      embeddedMetadata?.sportId ||
+      existingAnalysis?.sportId ||
+      DEFAULT_SPORT_ID
+
+    return getSportLabel(fallbackSportId, locale)
+  }, [sportLabel, segmentSkillType, embeddedMetadata?.sportId, existingAnalysis?.sportId, locale])
 
   const videoName = useMemo(
     () => getVideoDisplayName(rawVideoName, {
@@ -184,7 +254,9 @@ function Analyze({
     setShapes(existingAnalysis.shapes ?? [])
     setCustomFeedback(existingAnalysis.feedback ?? [])
     setCustomNextSteps(existingAnalysis.nextSteps ?? [])
-  }, [existingAnalysis])
+    setAnalysisSegments([])
+    replaceSegments([])
+  }, [existingAnalysis, replaceSegments])
 
   useEffect(() => {
     if (existingAnalysis || !embeddedMetadata) return
@@ -193,7 +265,39 @@ function Analyze({
     setShapes(embeddedMetadata.shapes ?? [])
     setCustomFeedback(embeddedMetadata.feedback ?? [])
     setCustomNextSteps(embeddedMetadata.nextSteps ?? [])
-  }, [embeddedMetadata, existingAnalysis])
+
+    const incomingAnalysisSegments: AnalysisSegment[] =
+      'analysisSegments' in embeddedMetadata && Array.isArray(embeddedMetadata.analysisSegments)
+        ? embeddedMetadata.analysisSegments
+        : []
+    setAnalysisSegments(toSortedAnalysisSegments(incomingAnalysisSegments))
+
+    const incomingPlaybackEdits =
+      'playbackEdits' in embeddedMetadata && Array.isArray(embeddedMetadata.playbackEdits)
+        ? embeddedMetadata.playbackEdits
+        : []
+
+    if (incomingPlaybackEdits.length > 0) {
+      replaceSegments(
+        incomingPlaybackEdits.map((segment) => ({
+          id: segment.id,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          action: segment.action,
+          speedFactor: segment.speedFactor,
+        }))
+      )
+    } else {
+      replaceSegments(
+        incomingAnalysisSegments.map((segment: AnalysisSegment) => ({
+          id: segment.id,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          action: 'feedback',
+        }))
+      )
+    }
+  }, [embeddedMetadata, existingAnalysis, replaceSegments])
 
   // Debug: Log when embeddedMetadata changes
   useEffect(() => {
@@ -202,9 +306,44 @@ function Analyze({
         shapes: embeddedMetadata.shapes?.length ?? 0,
         feedback: embeddedMetadata.feedback?.length ?? 0,
         nextSteps: embeddedMetadata.nextSteps?.length ?? 0,
+        analysisSegments:
+          'analysisSegments' in embeddedMetadata && Array.isArray(embeddedMetadata.analysisSegments)
+            ? embeddedMetadata.analysisSegments.length
+            : 0,
       })
     }
   }, [embeddedMetadata])
+
+  useEffect(() => {
+    setAnalysisSegments((previous) => {
+      if (previous.length === 0) {
+        return previous
+      }
+
+      const next = syncSegmentFeedbackDefaults(previous, customFeedback, customNextSteps)
+      const changed = next.some((segment, index) => {
+        const prevSegment = previous[index]
+        return (
+          prevSegment.feedback.checklist.length !== segment.feedback.checklist.length ||
+          prevSegment.feedback.notes.length !== segment.feedback.notes.length ||
+          prevSegment.feedback.nextSteps.length !== segment.feedback.nextSteps.length
+        )
+      })
+
+      return changed ? toSortedAnalysisSegments(next) : previous
+    })
+  }, [customFeedback, customNextSteps])
+
+  useEffect(() => {
+    if (analysisSegments.length === 0) {
+      setSelectedAnalysisSegmentId(null)
+      return
+    }
+
+    if (!selectedAnalysisSegmentId || !analysisSegments.some((segment) => segment.id === selectedAnalysisSegmentId)) {
+      setSelectedAnalysisSegmentId(analysisSegments[0].id)
+    }
+  }, [analysisSegments, selectedAnalysisSegmentId])
 
   const getSafeDuration = (): number => {
     if (!videoRef.current) return 0
@@ -241,15 +380,29 @@ function Analyze({
     }
   }
 
-  const handleSpeedChange = (speed: number) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed
-      setPlaybackRate(speed)
-    }
-  }
-
   const handleTimeUpdate = () => {
     if (videoRef.current) {
+      const rawTime = videoRef.current.currentTime
+      const removeSegment = runtimePlaybackEdits.find(
+        (segment) => segment.action === 'remove' && rawTime >= segment.startTime && rawTime < segment.endTime
+      )
+
+      if (removeSegment) {
+        const seekTarget = Math.min(removeSegment.endTime + 0.01, videoRef.current.duration || removeSegment.endTime)
+        videoRef.current.currentTime = seekTarget
+        setCurrentTime(seekTarget)
+        return
+      }
+
+      const speedSegment = runtimePlaybackEdits.find(
+        (segment) =>
+          segment.action === 'speed' &&
+          segment.speedFactor &&
+          rawTime >= segment.startTime &&
+          rawTime <= segment.endTime
+      )
+      videoRef.current.playbackRate = speedSegment?.speedFactor ?? 1
+
       const nextTime = videoRef.current.currentTime
       setCurrentTime(nextTime)
 
@@ -384,20 +537,44 @@ function Analyze({
   }, [shapes, selectedShapeId])
 
   useEffect(() => {
-    if (currentStep !== 'draw' && showDrawingCanvas) {
-      setShowDrawingCanvas(false)
-    }
-
-    if (currentStep === 'draw' && !showDrawingCanvas) {
+    if (workspaceMode === 'draw' && !showDrawingCanvas) {
       setShowDrawingCanvas(true)
     }
 
-    if (currentStep !== 'draw' && document.fullscreenElement === videoContainerRef.current) {
+    if (workspaceMode === 'segments' && showDrawingCanvas) {
+      setShowDrawingCanvas(false)
+    }
+
+    if (workspaceMode === 'segments' && document.fullscreenElement === videoContainerRef.current) {
       void document.exitFullscreen().catch(() => {
-        // Ignore exit fullscreen failure when leaving draw step.
+        // Ignore exit fullscreen failure when leaving draw mode.
       })
     }
-  }, [currentStep, showDrawingCanvas])
+  }, [showDrawingCanvas, workspaceMode])
+
+  const segmentAvailableSkills = useMemo(
+    () => getSkills(locale).filter((entry) => entry.sportId === segmentSkillType),
+    [locale, segmentSkillType]
+  )
+
+  const selectedSegmentSkill = useMemo(
+    () => segmentAvailableSkills.find((entry) => entry.name === segmentSkillName),
+    [segmentAvailableSkills, segmentSkillName]
+  )
+
+  useEffect(() => {
+    if (!selectedAnalysisSegment) {
+      setSegmentSkillType(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
+      setSegmentSkillName(derivedSkill?.name ?? '')
+      return
+    }
+
+    const segmentSkill = findSkillById(selectedAnalysisSegment.skillId, locale) ??
+      getSkills(locale).find((entry) => entry.name === selectedAnalysisSegment.skillName)
+
+    setSegmentSkillType(segmentSkill?.sportId ?? derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
+    setSegmentSkillName(segmentSkill?.name ?? selectedAnalysisSegment.skillName ?? '')
+  }, [selectedAnalysisSegment, locale, derivedSkill?.sportId, derivedSkill?.name])
 
   const updateSelectedShapeRange = (field: 'visibleFrom' | 'visibleTo', value: number) => {
     if (!selectedShapeId) return
@@ -456,19 +633,174 @@ function Analyze({
     URL.revokeObjectURL(downloadUrl)
   }
 
-  const handleSaveAnalysis = async (nextShapes: Shape[]) => {
-    setSaveError(null)
+  const handleAddAnalysisSegment = (startTime: number, endTime: number): string => {
+    const id = addSegment(startTime, endTime)
+    updateSegment(id, { action: 'feedback', speedFactor: undefined })
+    setSelectedAnalysisSegmentId(id)
 
-    const feedback = customFeedback.length > 0
-      ? customFeedback
-      : (embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? [])
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments([
+        ...previous,
+        {
+          id,
+          startTime,
+          endTime,
+          skillId: selectedSegmentSkill?.id ?? skill?.id,
+          skillName: selectedSegmentSkill?.name ?? skill?.name,
+          attemptIndex: previous.length + 1,
+          feedback: createSegmentFeedback(customFeedback, customNextSteps),
+        },
+      ])
+    )
 
-    const nextSteps = customNextSteps.length > 0
-      ? customNextSteps
-      : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
+    return id
+  }
 
-    const metadata: EmbeddedAnalysisMetadata = {
-      schemaVersion: 2,
+  const handleUpdateAnalysisSegment = (
+    id: string,
+    changes: Parameters<typeof updateSegment>[1]
+  ) => {
+    updateSegment(id, changes)
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== id) {
+            return segment
+          }
+
+          const nextStart = typeof changes.startTime === 'number' ? changes.startTime : segment.startTime
+          const nextEnd = typeof changes.endTime === 'number' ? changes.endTime : segment.endTime
+
+          return {
+            ...segment,
+            startTime: Math.max(0, Math.min(nextStart, nextEnd)),
+            endTime: Math.max(nextStart, nextEnd),
+          }
+        })
+      )
+    )
+  }
+
+  const handleRemoveAnalysisSegment = (id: string) => {
+    removeSegment(id)
+    setAnalysisSegments((previous) => toSortedAnalysisSegments(previous.filter((segment) => segment.id !== id)))
+  }
+
+  const handleSelectAnalysisSegment = (segmentId: string, seekToStart = false) => {
+    setSelectedAnalysisSegmentId(segmentId)
+
+    if (!seekToStart) {
+      return
+    }
+
+    const segment = analysisSegments.find((item) => item.id === segmentId)
+    if (!segment) {
+      return
+    }
+
+    handleSeek(segment.startTime)
+    handlePause()
+  }
+
+  const handleSegmentFeedbackChange = (feedbackItems: string[]) => {
+    setCustomFeedback(feedbackItems)
+
+    if (!selectedAnalysisSegmentId) {
+      return
+    }
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== selectedAnalysisSegmentId) {
+            return segment
+          }
+
+          return {
+            ...segment,
+            feedback: {
+              ...segment.feedback,
+              checklist: feedbackItems,
+            },
+          }
+        })
+      )
+    )
+  }
+
+  const handleSegmentSkillTypeChange = (nextSkillType: string) => {
+    setSegmentSkillType(nextSkillType)
+
+    const nextSkill = getSkills(locale).find((entry) => entry.sportId === nextSkillType && entry.name === segmentSkillName)
+    if (!nextSkill) {
+      setSegmentSkillName('')
+    }
+
+    if (!selectedAnalysisSegmentId) {
+      return
+    }
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== selectedAnalysisSegmentId) {
+            return segment
+          }
+
+          return {
+            ...segment,
+            skillId: nextSkill?.id,
+            skillName: nextSkill?.name,
+          }
+        })
+      )
+    )
+  }
+
+  const handleSegmentSkillNameChange = (nextSkillName: string) => {
+    setSegmentSkillName(nextSkillName)
+
+    const nextSkill = getSkills(locale).find((entry) => entry.sportId === segmentSkillType && entry.name === nextSkillName)
+
+    if (!selectedAnalysisSegmentId) {
+      return
+    }
+
+    setAnalysisSegments((previous) =>
+      toSortedAnalysisSegments(
+        previous.map((segment) => {
+          if (segment.id !== selectedAnalysisSegmentId) {
+            return segment
+          }
+
+          return {
+            ...segment,
+            skillId: nextSkill?.id,
+            skillName: nextSkill?.name,
+          }
+        })
+      )
+    )
+  }
+
+  const buildMetadata = (nextShapes: Shape[]): EmbeddedAnalysisMetadata => {
+    const fallbackFeedback = embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? []
+    const fallbackNextSteps = embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? []
+
+    const feedback = customFeedback.length > 0 ? customFeedback : fallbackFeedback
+    const nextSteps = customNextSteps.length > 0 ? customNextSteps : fallbackNextSteps
+
+    const resolvedSegments = toSortedAnalysisSegments(
+      syncSegmentFeedbackDefaults(analysisSegments, feedback, nextSteps).map((segment) => ({
+        ...segment,
+        skillId: segment.skillId ?? skill?.id,
+        skillName: segment.skillName ?? skill?.name,
+      }))
+    )
+
+    return {
+      schemaVersion: 3,
       savedAt: Date.now(),
       sourceVideoName: videoName,
       sportId: skill?.sportId,
@@ -476,9 +808,28 @@ function Analyze({
       skillName: skill?.name,
       skillType: skill?.sportId,
       shapes: nextShapes,
-      feedback,
-      nextSteps,
+      feedback: resolvedSegments.length > 0 ? deriveLegacyFeedbackFromSegments(resolvedSegments) : feedback,
+      nextSteps: resolvedSegments.length > 0 ? deriveLegacyNextStepsFromSegments(resolvedSegments) : nextSteps,
+      analysisSegments: resolvedSegments,
+      playbackEdits: segments
+        .filter((segment) => segment.action === 'remove' || segment.action === 'speed')
+        .map((segment) => {
+          const action = segment.action === 'speed' ? 'speed' : 'remove'
+
+          return {
+            id: segment.id,
+            startTime: segment.startTime,
+            endTime: segment.endTime,
+            action,
+            speedFactor: action === 'speed' ? segment.speedFactor : undefined,
+          }
+        }),
     }
+  }
+
+  const handleSaveAnalysis = async (nextShapes: Shape[]) => {
+    setSaveError(null)
+    const metadata = buildMetadata(nextShapes)
 
     setIsExporting(true)
 
@@ -489,7 +840,7 @@ function Analyze({
 
       const fileName = buildAnalyzedVideoFileName(rawVideoName || videoName, {
         timestamp: existingAnalysis?.timestamp,
-        sportLabel,
+        sportLabel: exportSportLabel,
         skillName: skill?.name,
       })
       console.log('[Export] Attaching metadata with ffmpeg...')
@@ -516,138 +867,20 @@ function Analyze({
     }
   }
 
-  const clearCanvas = () => {
-    setShapes([]);
-    setSelectedShapeId(null)
-  };
+  const deleteShapeById = (shapeId: string) => {
+    setShapes((prev) => prev.filter((shape) => shape.id !== shapeId))
+  }
 
-  const undoLastShape = () => {
-    setShapes((prev) => prev.slice(0, -1));
-  };
-
-  const saveAnalysisToLibrary = async (nextShapes: Shape[]) => {
-    if (!libraryId) {
-      setSaveError(t('analyze.error.missingVideoId'))
-      return
-    }
-
-    setSaveError(null)
-
-    try {
-      const record = await getVideoLibraryRecord(libraryId)
-      if (!record) {
-        setSaveError(t('analyze.error.videoMissing'))
-        return
-      }
-
-      const feedback = customFeedback.length > 0
-        ? customFeedback
-        : (embeddedMetadata?.feedback ?? existingAnalysis?.feedback ?? [])
-
-      const nextSteps = customNextSteps.length > 0
-        ? customNextSteps
-        : (embeddedMetadata?.nextSteps ?? existingAnalysis?.nextSteps ?? [])
-
-      const metadata: EmbeddedAnalysisMetadata = {
-        schemaVersion: 2,
-        savedAt: Date.now(),
-        sourceVideoName: videoName,
-        sportId: skill?.sportId,
-        skillId: skill?.id,
-        skillName: skill?.name,
-        skillType: skill?.sportId,
-        shapes: nextShapes,
-        feedback,
-        nextSteps,
-      }
-
-      console.log('[LibrarySave] Updating library record with metadata...')
-      const updatedBlob = workingVideoBlob ?? record.blob
-      const updatedRecord = {
-        ...record,
-        metadata,
-        blob: updatedBlob,
-        size: updatedBlob.size,
-        mimeType: updatedBlob.type || record.mimeType,
-        lastModified: Date.now(),
-      }
-      await upsertVideoRecord(updatedRecord)
-      console.log('[LibrarySave] Library record updated successfully')
-
-      setIsSaved(true)
-    } catch (error) {
-      const message = t('analyze.error.saveAnalysis')
-      console.error('[LibrarySave] Error:', message, error)
-      setSaveError(message)
-    }
+  const deleteSelectedShape = () => {
+    if (!selectedShapeId) return
+    deleteShapeById(selectedShapeId)
   }
 
   const saveAnalysis = () => {
     void handleSaveAnalysis(shapes)
   };
 
-  const applySegmentEdits = async () => {
-    if (segments.length === 0) {
-      setEditError(t('editor.error.noSegments'))
-      return
-    }
-
-    setEditError(null)
-    setIsApplyingEdits(true)
-    setEditProgress(0)
-
-    try {
-      const sourceBlob = await getSourceVideoBlob()
-      const editedBlob = await applyVideoEdits(
-        sourceBlob,
-        videoName || 'video.mp4',
-        segments,
-        duration,
-        setEditProgress
-      )
-
-      if (videoRef.current) {
-        videoRef.current.pause()
-      }
-
-      setWorkingVideoBlob(editedBlob)
-      setIsPlaying(false)
-      setCurrentTime(0)
-      setDuration(0)
-      setVideoLoaded(false)
-      clearSegments()
-    } catch {
-      setEditError(t('editor.error.exportFailed'))
-    } finally {
-      setIsApplyingEdits(false)
-      setEditProgress(0)
-    }
-  }
-
-  const quickSaveAnalysis = () => {
-    void saveAnalysisToLibrary(shapes)
-  };
-
-  const stepOrder: AnalyzeStep[] = ['draw', 'feedback', 'nextSteps', 'save']
-  const stepIndex = stepOrder.indexOf(currentStep)
-  const showVideoWorkspace = currentStep === 'draw'
-
-  const goToPreviousStep = () => {
-    if (stepIndex <= 0) return
-    setCurrentStep(stepOrder[stepIndex - 1])
-  }
-
-  const goToNextStep = () => {
-    if (stepIndex >= stepOrder.length - 1) return
-    setCurrentStep(stepOrder[stepIndex + 1])
-  }
-
-  const getStepTitle = () => {
-    if (currentStep === 'draw') return t('analyze.stepTitle.draw')
-    if (currentStep === 'feedback') return t('analyze.stepTitle.feedback')
-    if (currentStep === 'nextSteps') return t('analyze.stepTitle.nextSteps')
-    return t('analyze.stepTitle.save')
-  }
+  const showVideoWorkspace = true
 
   const getHomeSelectionSearch = (): string => {
     if (!skill) return ''
@@ -660,21 +893,157 @@ function Analyze({
     return params.toString()
   }
 
-  return (
-    <div className="analyze">
-      <AppNav />
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <button onClick={onBack}>← {t('common.back')}</button>
-        <h1>{t('analyze.title', { videoName })}</h1>
-        <div></div>
-      </header>
+  const handleNavigateToHome = () => {
+    onNavigateHome?.()
+    const search = getHomeSelectionSearch()
+    navigate({
+      pathname: '/',
+      search: search ? `?${search}` : '',
+    })
+  }
 
-      <div className="analyze-stepper" style={{ marginBottom: '16px' }}>
-        <div className={`analyze-step ${currentStep === 'draw' ? 'active' : ''}`}>1. {t('analyze.step1')}</div>
-        <div className={`analyze-step ${currentStep === 'feedback' ? 'active' : ''}`}>2. {t('analyze.step2')}</div>
-        <div className={`analyze-step ${currentStep === 'nextSteps' ? 'active' : ''}`}>3. {t('analyze.step3')}</div>
-        <div className={`analyze-step ${currentStep === 'save' ? 'active' : ''}`}>4. {t('analyze.step4')}</div>
+  const renderSegmentSelector = (showPauseButton: boolean): JSX.Element | null => {
+    if (analysisSegments.length === 0) {
+      return (
+        <p className="analyze-segment-selector__empty">
+          {t('analyze.segmentSelector.empty')}
+        </p>
+      )
+    }
+
+    return (
+      <div className="analyze-segment-selector">
+        <p className="analyze-segment-selector__title">{t('analyze.segmentSelector.title')}</p>
+        <div className="analyze-segment-selector__chips">
+          {analysisSegments.map((segment, index) => {
+            const isSelected = segment.id === selectedAnalysisSegmentId
+            const isPlaybackActive = segment.id === playbackActiveSegmentId
+
+            return (
+              <button
+                key={segment.id}
+                type="button"
+                onClick={() => handleSelectAnalysisSegment(segment.id)}
+                className={`analyze-segment-selector__chip ${isSelected ? 'selected' : ''} ${isPlaybackActive ? 'active' : ''}`.trim()}
+              >
+                {t('analyze.segmentSelector.item', {
+                  index: index + 1,
+                  start: formatTime(segment.startTime),
+                  end: formatTime(segment.endTime),
+                })}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="analyze-segment-selector__controls">
+          <button
+            type="button"
+            className={`analyze-segment-selector__btn analyze-segment-selector__btn--follow ${followPlayback ? 'active' : ''}`.trim()}
+            aria-pressed={followPlayback}
+            onClick={() => setFollowPlayback((previous) => !previous)}
+          >
+            {t('analyze.segmentSelector.followPlayback')}
+          </button>
+
+          <button
+            type="button"
+            className={`analyze-segment-selector__btn ${isVideoFeedbackOverlayEnabled ? 'active' : ''}`.trim()}
+            aria-pressed={isVideoFeedbackOverlayEnabled}
+            onClick={() => setIsVideoFeedbackOverlayEnabled((previous) => !previous)}
+          >
+            {t('analyze.segmentSelector.inVideoFeedback')}
+          </button>
+
+          {showPauseButton && selectedAnalysisSegment && (
+            <button
+              type="button"
+              className="analyze-segment-selector__btn analyze-segment-selector__btn--pause"
+              onClick={() => handleSelectAnalysisSegment(selectedAnalysisSegment.id, true)}
+            >
+              {t('analyze.segmentSelector.pauseAt', {
+                time: formatTime(selectedAnalysisSegment.startTime),
+              })}
+            </button>
+          )}
+        </div>
       </div>
+    )
+  }
+
+  const renderInlineSegmentFeedbackEditor = (): JSX.Element | null => {
+    if (workspaceMode !== 'segments') {
+      return null
+    }
+
+    const shouldShowLivePlaybackFeedback = followPlayback && isPlaying
+
+    return (
+      <div className="analyze-inline-segment-feedback">
+        {renderSegmentSelector(true)}
+
+        {selectedAnalysisSegment && (
+          <div className="analyze-segment-skill-picker">
+            <SkillPicker
+              label={t('home.skillPickerLabel')}
+              selectedSkillType={segmentSkillType}
+              selectedSkillName={segmentSkillName}
+              onSkillTypeChange={handleSegmentSkillTypeChange}
+              onSkillNameChange={handleSegmentSkillNameChange}
+              allowDeselect={true}
+              collapseTypeSelectorWhenSelected={true}
+              helperText={t('analyze.nextSteps.skillLabel')}
+              className="analyze-segment-skill-picker__inner"
+            />
+          </div>
+        )}
+
+        {shouldShowLivePlaybackFeedback ? (
+          <section className="analyze-live-feedback" aria-live="polite">
+            {feedbackDisplaySegment ? (
+              <>
+                <p className="analyze-live-feedback__label">
+                  {t('analyze.segmentSelector.item', {
+                    index: feedbackDisplaySegment.attemptIndex,
+                    start: formatTime(feedbackDisplaySegment.startTime),
+                    end: formatTime(feedbackDisplaySegment.endTime),
+                  })}
+                </p>
+
+                <div className="analyze-live-feedback__columns">
+                  <div>
+                    <h4>{t('feedback.title')}</h4>
+                    {feedbackOverlayItems.length > 0 ? (
+                      <ul>
+                        {feedbackOverlayItems.map((item, index) => (
+                          <li key={`${feedbackDisplaySegment.id}-feedback-${index}`}>{item}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{t('history.feedbackEmpty')}</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="analyze-live-feedback__empty">{t('analyze.segmentSelector.empty')}</p>
+            )}
+          </section>
+        ) : selectedAnalysisSegment ? (
+          <FeedbackPanel
+            skill={selectedSegmentSkill}
+            mode="feedback"
+            initialFeedback={selectedAnalysisSegment.feedback.checklist}
+            onFeedbackChange={handleSegmentFeedbackChange}
+          />
+        ) : null}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`analyze ${showDrawingCanvas ? 'analyze--drawing-mobile-open' : ''}`}>
+      <AppNav />
 
       <div style={{ position: 'relative', display: 'block' }}>
         {/* Video Section */}
@@ -731,92 +1100,236 @@ function Analyze({
               </div>
             )}
 
-            <div className="video-controls-overlay">
-              <Controls
+            <VideoFeedbackOverlay
+              visible={shouldShowVideoFeedbackOverlay}
+              startTimeLabel={videoOverlaySegment ? formatTime(videoOverlaySegment.startTime) : undefined}
+              nextStepsTitle={t('history.nextSteps')}
+              feedbackItems={feedbackOverlayItems}
+              nextStepItems={feedbackOverlayNextSteps}
+              emptyLabel={t('history.feedbackEmpty')}
+            />
+
+            <div className="video-controls-overlay analyze-video-controls-overlay">
+              <PlaybackToolbar
                 isPlaying={isPlaying}
-                playbackRate={playbackRate}
                 currentTime={currentTime}
                 duration={duration}
                 onPlay={handlePlay}
                 onPause={handlePause}
-                onSpeedChange={handleSpeedChange}
                 onSeek={handleSeek}
                 videoLoaded={videoLoaded}
-                onToggleDrawing={() => setShowDrawingCanvas(!showDrawingCanvas)}
-                showDrawingCanvas={showDrawingCanvas}
                 onToggleFullscreen={handleToggleFullscreen}
                 isFullscreen={isFullscreen}
               />
             </div>
           </div>
 
-          {showDrawingCanvas && (
-            <div className="drawing-tools">
-              <button onClick={() => setTool("line")}>{t('analyze.tool.line')}</button>
-              <button onClick={() => setTool("circle")}>{t('analyze.tool.circle')}</button>
-              <button onClick={() => setTool("none")}>{t('analyze.tool.none')}</button>
-              <button onClick={undoLastShape}>{t('analyze.tool.undo')}</button>
-              <button onClick={clearCanvas}>{t('analyze.tool.clear')}</button>
+          <div className="analyze-workspace-mode-wrap">
+            <div className="analyze-workspace-mode" role="tablist" aria-label={t('analyze.workspaceModeAria')}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={workspaceMode === 'segments'}
+                className={workspaceMode === 'segments' ? 'active' : ''}
+                onClick={() => {
+                  setWorkspaceMode('segments')
+                  setShowDrawingCanvas(false)
+                }}
+              >
+                {t('analyze.edit.title')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={workspaceMode === 'draw'}
+                className={workspaceMode === 'draw' ? 'active' : ''}
+                onClick={() => {
+                  setWorkspaceMode('draw')
+                  setShowDrawingCanvas(true)
+                }}
+              >
+                {t('analyze.step1')}
+              </button>
             </div>
-          )}
+          </div>
 
-          {videoLoaded && duration > 0 && (
-            <div className="shape-timeline-editor" style={{ marginTop: '14px' }}>
-              <h3>{t('analyze.edit.title')}</h3>
-              <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+          {workspaceMode === 'segments' && videoLoaded && duration > 0 && (
+            <div className={isMobile ? 'shape-timeline-editor' : 'analyze-inline-segment-editor'} style={isMobile ? { marginTop: '14px' } : undefined}>
+              {isMobile && (
+                <>
+                  <h3>{t('analyze.edit.title')}</h3>
+                  <p style={{ marginTop: '6px', color: '#555' }}>{t('analyze.edit.help')}</p>
+                </>
+              )}
 
               <EditTimeline
                 duration={duration}
                 currentTime={currentTime}
                 segments={segments}
-                onAddSegment={addSegment}
-                onUpdateSegment={updateSegment}
-                onRemoveSegment={removeSegment}
+                selectedSegmentId={selectedAnalysisSegmentId}
+                onSelectSegment={(segmentId) => {
+                  if (segmentId) {
+                    handleSelectAnalysisSegment(segmentId)
+                  }
+                }}
+                showFeedbackAction={true}
+                onAddSegment={handleAddAnalysisSegment}
+                onUpdateSegment={handleUpdateAnalysisSegment}
+                onRemoveSegment={handleRemoveAnalysisSegment}
                 onSeek={handleSeek}
               />
 
-              <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="analyze-inline-btn analyze-inline-btn--apply"
-                  onClick={() => void applySegmentEdits()}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {isApplyingEdits
-                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
-                    : t('analyze.edit.apply')}
-                </button>
+              <div className="analyze-inline-segment-actions">
+                <p style={{ margin: 0, color: '#475569', fontSize: '0.88rem' }}>
+                  {t('analyze.edit.help')}
+                </p>
+              </div>
 
+              {renderInlineSegmentFeedbackEditor()}
+            </div>
+          )}
+
+          {workspaceMode === 'draw' && showDrawingCanvas && isMobile && (
+            <DrawingToolbar
+              selectedTool={tool === 'none' ? 'none' : (tool as 'line' | 'circle' | 'rectangle' | 'arrow' | 'eraser' | 'none')}
+              onToolChange={(newTool) => {
+                if (newTool === 'none') {
+                  setTool('none')
+                } else if (newTool === 'eraser') {
+                  setTool('none')
+                } else {
+                  setTool(newTool as 'line' | 'circle' | 'none')
+                }
+              }}
+              onDeleteSelected={deleteSelectedShape}
+              canDeleteSelected={Boolean(selectedShapeId)}
+              color={drawingColor}
+              onColorChange={setDrawingColor}
+              strokeWidth={drawingStrokeWidth}
+              onStrokeWidthChange={setDrawingStrokeWidth}
+              opacity={drawingOpacity}
+              onOpacityChange={setDrawingOpacity}
+            />
+          )}
+
+          {workspaceMode === 'draw' && showDrawingCanvas && !isMobile && (
+            <div className="analyze-inline-draw-editor">
+              <div className="analyze-inline-tools" role="toolbar" aria-label={t('analyze.drawingToolsAria')}>
                 <button
                   type="button"
-                  className="analyze-inline-btn"
-                  onClick={clearSegments}
-                  disabled={segments.length === 0 || isApplyingEdits}
+                  className={tool === 'line' ? 'active' : ''}
+                  onClick={() => setTool('line')}
                 >
-                  {t('editor.clearSegments')}
+                  {t('analyze.tool.line')}
+                </button>
+                <button
+                  type="button"
+                  className={tool === 'circle' ? 'active' : ''}
+                  onClick={() => setTool('circle')}
+                >
+                  {t('analyze.tool.circle')}
+                </button>
+                <button
+                  type="button"
+                  className={tool === 'none' ? 'active' : ''}
+                  onClick={() => setTool('none')}
+                >
+                  {t('analyze.tool.none')}
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteSelectedShape}
+                  disabled={!selectedShapeId}
+                >
+                  {t('analyze.tool.delete')}
                 </button>
               </div>
 
-              {editError && (
-                <p style={{ marginTop: '8px', color: '#c62828' }}>{editError}</p>
+              {shapes.length > 0 && (
+                <div className="analyze-inline-draw-range-editor">
+                  <h4>{t('analyze.timeline.title')}</h4>
+
+                  <div className="shape-selector-list">
+                    {shapes.map((shape, index) => (
+                      <div key={shape.id} className="shape-chip">
+                        <button
+                          type="button"
+                          className={`shape-chip__select ${selectedShapeId === shape.id ? 'active' : ''}`}
+                          onClick={() => setSelectedShapeId(shape.id)}
+                        >
+                          {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
+                        </button>
+                        <button
+                          type="button"
+                          className="shape-chip__delete"
+                          onClick={() => deleteShapeById(shape.id)}
+                          aria-label={`${t('analyze.tool.delete')} ${index + 1}`}
+                          title={t('analyze.tool.delete')}
+                        >
+                          <span aria-hidden="true">🗑</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedShape && (
+                    <div className="shape-range-controls">
+                      <label>
+                        {t('analyze.timeline.start', { time: formatTime(selectedShape.visibleFrom ?? 0) })}
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 0}
+                          step={0.1}
+                          value={selectedShape.visibleFrom ?? 0}
+                          onChange={(e) => updateSelectedShapeRange('visibleFrom', Number(e.target.value))}
+                          disabled={duration <= 0}
+                        />
+                      </label>
+
+                      <label>
+                        {t('analyze.timeline.end', { time: formatTime(selectedShape.visibleTo ?? duration) })}
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 0}
+                          step={0.1}
+                          value={selectedShape.visibleTo ?? duration}
+                          onChange={(e) => updateSelectedShapeRange('visibleTo', Number(e.target.value))}
+                          disabled={duration <= 0}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
 
-          {showDrawingCanvas && shapes.length > 0 && (
+          {workspaceMode === 'draw' && showDrawingCanvas && isMobile && shapes.length > 0 && (
             <div className="shape-timeline-editor">
               <h3>{t('analyze.timeline.title')}</h3>
 
               <div className="shape-selector-list">
                 {shapes.map((shape, index) => (
-                  <button
-                    key={shape.id}
-                    type="button"
-                    className={selectedShapeId === shape.id ? 'active' : ''}
-                    onClick={() => setSelectedShapeId(shape.id)}
-                  >
-                    {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
-                  </button>
+                  <div key={shape.id} className="shape-chip">
+                    <button
+                      type="button"
+                      className={`shape-chip__select ${selectedShapeId === shape.id ? 'active' : ''}`}
+                      onClick={() => setSelectedShapeId(shape.id)}
+                    >
+                      {shape.type === 'line' ? t('analyze.tool.line') : t('analyze.tool.circle')} #{index + 1}
+                    </button>
+                    <button
+                      type="button"
+                      className="shape-chip__delete"
+                      onClick={() => deleteShapeById(shape.id)}
+                      aria-label={`${t('analyze.tool.delete')} ${index + 1}`}
+                      title={t('analyze.tool.delete')}
+                    >
+                      <span aria-hidden="true">🗑</span>
+                    </button>
+                  </div>
                 ))}
               </div>
 
@@ -851,124 +1364,38 @@ function Analyze({
               )}
             </div>
           )}
+
+
           </div>
         )}
 
-        {/* Focused Step Section */}
         <div style={{ width: '100%', marginTop: showVideoWorkspace ? '16px' : '0' }}>
           <div className="analyze-step-panel">
-            {currentStep !== 'draw' && <h3>{getStepTitle()}</h3>}
-
-            {currentStep === 'draw' && (
-              <div>
-                <p>
-                  {t('analyze.draw.help')}
-                </p>
-                <p style={{ color: '#555', fontSize: '0.9rem' }}>
-                  {t('analyze.draw.tip')}
-                </p>
-                <h3 style={{ marginTop: '14px' }}>{getStepTitle()}</h3>
-              </div>
-            )}
-
-            {currentStep === 'feedback' && (
-              <FeedbackPanel
-                skill={skill}
-                mode="feedback"
-                initialFeedback={existingAnalysis?.feedback || customFeedback}
-                initialNextSteps={existingAnalysis?.nextSteps || customNextSteps}
-                onFeedbackChange={setCustomFeedback}
-                onNextStepsChange={setCustomNextSteps}
-              />
-            )}
-
-            {currentStep === 'nextSteps' && (
-              <div>
-                {!skill && (
-                  <SkillPicker
-                    label={t('analyze.nextSteps.skillLabel')}
-                    selectedSkillType={selectedSkillType}
-                    selectedSkillName={selectedSkillName}
-                    onSkillTypeChange={setSelectedSkillType}
-                    onSkillNameChange={setSelectedSkillName}
-                    allowDeselect={true}
-                    className="home-skill-picker"
-                  />
-                )}
-
-                <FeedbackPanel
-                  skill={skill}
-                  mode="nextSteps"
-                  initialFeedback={existingAnalysis?.feedback || customFeedback}
-                  initialNextSteps={existingAnalysis?.nextSteps || customNextSteps}
-                  onFeedbackChange={setCustomFeedback}
-                  onNextStepsChange={setCustomNextSteps}
-                />
-              </div>
-            )}
-
-            {currentStep === 'save' && (
-              <div>
-                {!isSaved ? (
-                  <>
-                    <p>{t('analyze.save.ready')}</p>
-                    <ul style={{ margin: '10px 0 0 18px' }}>
-                      <li>{t('analyze.save.feedbackPoints', { count: customFeedback.length })}</li>
-                      <li>{t('analyze.save.nextSteps', { count: customNextSteps.length })}</li>
-                    </ul>
-                    <p style={{ marginTop: '10px', color: '#555' }}>
-                      {t('analyze.save.help')}
-                    </p>
-                    {saveError && (
-                      <p style={{ marginTop: '8px', color: '#c62828' }}>
-                        {saveError}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="analysis-saved-panel">
-                    <h4>{t('analyze.saved.title')}</h4>
-                    <p>{t('analyze.saved.body')}</p>
-                    <div className="analysis-saved-actions">
-                      <button type="button" onClick={() => navigate(`/${getHomeSelectionSearch() ? `?${getHomeSelectionSearch()}` : ''}`)}>
-                        {t('analyze.saved.cta')}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="analyze-step-actions">
-              <button type="button" onClick={goToPreviousStep} disabled={stepIndex === 0}>
-                ← {t('analyze.prev')}
+              <button type="button" onClick={onBack}>
+                ← {t('common.back')}
               </button>
-              {currentStep === 'save' ? (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={quickSaveAnalysis}
-                    disabled={isSaved || isExporting}
-                    title={t('analyze.quickSave.title')}
-                  >
-                    {isExporting ? t('analyze.saving') : `💾 ${t('analyze.quickSave')}`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveAnalysis}
-                    className="analyze-save-cta"
-                    disabled={isSaved || isExporting}
-                    title={t('analyze.export.title')}
-                  >
-                    {isSaved ? t('analyze.exported') : isExporting ? t('analyze.exporting') : `⬇️ ${t('analyze.export')}`}
-                  </button>
-                </div>
-              ) : (
-                <button type="button" onClick={goToNextStep} disabled={stepIndex === stepOrder.length - 1}>
-                  {t('analyze.next')} →
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={saveAnalysis}
+                className="analyze-save-cta"
+                disabled={isExporting}
+                title={t('analyze.export.title')}
+              >
+                {isSaved ? t('analyze.exported') : isExporting ? t('analyze.exporting') : `⬇️ ${t('analyze.export')}`}
+              </button>
+              <button type="button" onClick={handleNavigateToHome}>
+                {t('analyze.saved.cta')}
+              </button>
             </div>
+
+            {saveError && <p className="analyze-inline-error">{saveError}</p>}
+
+            {isSaved && (
+              <p style={{ marginTop: '6px', color: '#166534', fontWeight: 600 }}>
+                {t('analyze.saved.title')}
+              </p>
+            )}
           </div>
         </div>
       </div>

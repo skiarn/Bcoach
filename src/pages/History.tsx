@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppNav from '../components/AppNav.tsx'
 import Controls from '../components/Controls.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
+import VideoFeedbackOverlay from '../components/VideoFeedbackOverlay.tsx'
 import HistoryDashboard from '../components/history/HistoryDashboard.tsx'
 import HistorySkillGroups from '../components/history/HistorySkillGroups.tsx'
 import { computeDashboardStats, DashboardRange, groupItemsBySkill } from '../components/history/historyData.ts'
@@ -17,6 +18,7 @@ import {
   VideoLibraryListItem,
   VideoLibraryRecord,
 } from '../services/videoLibrary.ts'
+import { AnalysisSegment, PlaybackEditSegment } from '../types/analysis.ts'
 
 function formatDate(timestamp: number, locale: string): string {
   return new Date(timestamp).toLocaleDateString(locale === 'en' ? 'en-US' : 'sv-SE', {
@@ -52,10 +54,13 @@ function History(): JSX.Element {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
+  const [basePlaybackRate, setBasePlaybackRate] = useState(1)
   const [overlayWidth, setOverlayWidth] = useState(0)
   const [overlayHeight, setOverlayHeight] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [followPlayback, setFollowPlayback] = useState(true)
+  const [isVideoFeedbackOverlayEnabled, setIsVideoFeedbackOverlayEnabled] = useState(true)
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null)
 
   const refreshItems = async () => {
     setIsLoading(true)
@@ -142,8 +147,68 @@ function History(): JSX.Element {
   }, [selectedRecord])
 
   const shapes = useMemo(() => selectedRecord?.metadata?.shapes ?? [], [selectedRecord])
+  const playbackEdits = useMemo<PlaybackEditSegment[]>(() => {
+    if (!selectedRecord?.metadata || selectedRecord.metadata.schemaVersion !== 3) {
+      return []
+    }
+
+    return [...(selectedRecord.metadata.playbackEdits ?? [])].sort((a, b) => a.startTime - b.startTime)
+  }, [selectedRecord])
+  const analysisSegments = useMemo<AnalysisSegment[]>(() => {
+    if (!selectedRecord?.metadata || selectedRecord.metadata.schemaVersion !== 3) {
+      return []
+    }
+
+    return [...selectedRecord.metadata.analysisSegments].sort((a, b) => a.startTime - b.startTime)
+  }, [selectedRecord])
+
+  const playbackActiveSegment = useMemo(() => {
+    if (analysisSegments.length === 0) {
+      return null
+    }
+
+    const matchingSegments = analysisSegments
+      .filter((segment) => currentTime >= segment.startTime && currentTime < segment.endTime)
+      .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime)
+
+    return matchingSegments.length > 0 ? matchingSegments[matchingSegments.length - 1] : null
+  }, [analysisSegments, currentTime])
+
+  useEffect(() => {
+    if (analysisSegments.length === 0) {
+      setSelectedSegmentId(null)
+      return
+    }
+
+    if (!selectedSegmentId || !analysisSegments.some((segment) => segment.id === selectedSegmentId)) {
+      setSelectedSegmentId(analysisSegments[0].id)
+    }
+  }, [analysisSegments, selectedSegmentId])
+
+  const selectedSegment = useMemo(
+    () => analysisSegments.find((segment) => segment.id === selectedSegmentId) ?? null,
+    [analysisSegments, selectedSegmentId]
+  )
+
+  const displayedSegment = followPlayback ? playbackActiveSegment : selectedSegment
+  const videoOverlaySegment = playbackActiveSegment
+
   const feedback = useMemo(() => selectedRecord?.metadata?.feedback ?? [], [selectedRecord])
   const nextSteps = useMemo(() => selectedRecord?.metadata?.nextSteps ?? [], [selectedRecord])
+  const isSegmentBasedFeedback = analysisSegments.length > 0
+  const activeFeedbackItems = useMemo(
+    () => (displayedSegment ? [...displayedSegment.feedback.checklist, ...displayedSegment.feedback.notes] : []),
+    [displayedSegment]
+  )
+  const overlayFeedbackItems = useMemo(
+    () => (videoOverlaySegment ? [...videoOverlaySegment.feedback.checklist, ...videoOverlaySegment.feedback.notes] : []),
+    [videoOverlaySegment]
+  )
+  const overlayNextStepItems = videoOverlaySegment?.feedback.nextSteps ?? []
+  const shouldShowVideoFeedbackOverlay =
+    isVideoFeedbackOverlayEnabled &&
+    Boolean(videoOverlaySegment) &&
+    (overlayFeedbackItems.length > 0 || overlayNextStepItems.length > 0)
 
   const dashboardStats = useMemo(
     () => computeDashboardStats(items, dashboardRange),
@@ -171,8 +236,60 @@ function History(): JSX.Element {
 
   const handleSpeedChange = (speed: number) => {
     if (!videoRef.current) return
-    videoRef.current.playbackRate = speed
-    setPlaybackRate(speed)
+    setBasePlaybackRate(speed)
+
+    const currentVideoTime = videoRef.current.currentTime
+    const activeSpeedSegment = playbackEdits.find(
+      (segment) =>
+        segment.action === 'speed' &&
+        segment.speedFactor &&
+        currentVideoTime >= segment.startTime &&
+        currentVideoTime <= segment.endTime
+    )
+
+    videoRef.current.playbackRate = activeSpeedSegment?.speedFactor ?? speed
+  }
+
+  useEffect(() => {
+    if (!videoRef.current) {
+      return
+    }
+
+    const removeSegment = playbackEdits.find(
+      (segment) =>
+        segment.action === 'remove' &&
+        currentTime >= segment.startTime &&
+        currentTime < segment.endTime
+    )
+
+    if (removeSegment) {
+      const seekTarget = Math.min(removeSegment.endTime + 0.01, videoRef.current.duration || removeSegment.endTime)
+      videoRef.current.currentTime = seekTarget
+      setCurrentTime(seekTarget)
+      return
+    }
+
+    const activeSpeedSegment = playbackEdits.find(
+      (segment) =>
+        segment.action === 'speed' &&
+        segment.speedFactor &&
+        currentTime >= segment.startTime &&
+        currentTime <= segment.endTime
+    )
+
+    videoRef.current.playbackRate = activeSpeedSegment?.speedFactor ?? basePlaybackRate
+  }, [currentTime, playbackEdits, basePlaybackRate])
+
+  const handleSeekToSegment = (segment: AnalysisSegment) => {
+    setSelectedSegmentId(segment.id)
+    handleSeek(segment.startTime)
+  }
+
+  const formatTime = (timeInSeconds: number): string => {
+    const safeTime = Math.max(0, timeInSeconds)
+    const minutes = Math.floor(safeTime / 60)
+    const seconds = Math.floor(safeTime % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
   const handleToggleFullscreen = async () => {
@@ -201,11 +318,6 @@ function History(): JSX.Element {
         libraryId: selectedRecord.id,
       },
     })
-  }
-
-  const handleOpenInEditor = () => {
-    if (!selectedRecord) return
-    navigate(`/edit/${selectedRecord.id}`)
   }
 
   const handleDelete = async (id: string) => {
@@ -318,10 +430,19 @@ function History(): JSX.Element {
                       />
                     )}
 
+                    <VideoFeedbackOverlay
+                      visible={shouldShowVideoFeedbackOverlay}
+                      startTimeLabel={videoOverlaySegment ? formatTime(videoOverlaySegment.startTime) : undefined}
+                      nextStepsTitle={t('history.nextSteps')}
+                      feedbackItems={overlayFeedbackItems}
+                      nextStepItems={overlayNextStepItems}
+                      emptyLabel={t('history.feedbackEmpty')}
+                    />
+
                     <div className="video-controls-overlay">
                       <Controls
                         isPlaying={isPlaying}
-                        playbackRate={playbackRate}
+                        playbackRate={basePlaybackRate}
                         currentTime={currentTime}
                         duration={duration}
                         onPlay={handlePlay}
@@ -341,19 +462,61 @@ function History(): JSX.Element {
                     <button type="button" className="history-action-btn history-action-btn--edit" onClick={handleOpenInAnalyze}>
                       {t('history.openAnalyze')}
                     </button>
-                    <button type="button" className="history-action-btn history-action-btn--editor" onClick={handleOpenInEditor}>
-                      {t('history.openEditor')}
-                    </button>
                   </div>
+
+                  {analysisSegments.length > 0 && (
+                    <div className="history-segment-selector">
+                      <h3>{t('analyze.segmentSelector.title')}</h3>
+                      <div className="analyze-segment-selector__controls">
+                        <button
+                          type="button"
+                          className={`analyze-segment-selector__btn analyze-segment-selector__btn--follow ${followPlayback ? 'active' : ''}`.trim()}
+                          aria-pressed={followPlayback}
+                          onClick={() => setFollowPlayback((previous) => !previous)}
+                        >
+                          {t('analyze.segmentSelector.followPlayback')}
+                        </button>
+                        <button
+                          type="button"
+                          className={`analyze-segment-selector__btn ${isVideoFeedbackOverlayEnabled ? 'active' : ''}`.trim()}
+                          aria-pressed={isVideoFeedbackOverlayEnabled}
+                          onClick={() => setIsVideoFeedbackOverlayEnabled((previous) => !previous)}
+                        >
+                          {t('analyze.segmentSelector.inVideoFeedback')}
+                        </button>
+                      </div>
+                      <div className="analyze-segment-selector__chips">
+                        {analysisSegments.map((segment) => {
+                          const isSelected = segment.id === selectedSegmentId
+                          const isActive = followPlayback && playbackActiveSegment?.id === segment.id
+
+                          return (
+                            <button
+                              key={segment.id}
+                              type="button"
+                              className={`analyze-segment-selector__chip ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''}`.trim()}
+                              onClick={() => handleSeekToSegment(segment)}
+                            >
+                              {t('analyze.segmentSelector.item', {
+                                index: segment.attemptIndex,
+                                start: formatTime(segment.startTime),
+                                end: formatTime(segment.endTime),
+                              })}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div style={{ marginTop: '18px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div>
                       <h3>{t('history.feedback')}</h3>
-                      {feedback.length === 0 ? (
+                      {(isSegmentBasedFeedback ? activeFeedbackItems : feedback).length === 0 ? (
                         <p>{t('history.feedbackEmpty')}</p>
                       ) : (
                         <ul>
-                          {feedback.map((item, index) => (
+                          {(isSegmentBasedFeedback ? activeFeedbackItems : feedback).map((item, index) => (
                             <li key={`${item}-${index}`}>{item}</li>
                           ))}
                         </ul>
@@ -362,11 +525,11 @@ function History(): JSX.Element {
 
                     <div>
                       <h3>{t('history.nextSteps')}</h3>
-                      {nextSteps.length === 0 ? (
+                      {(isSegmentBasedFeedback ? (displayedSegment?.feedback.nextSteps ?? []) : nextSteps).length === 0 ? (
                         <p>{t('history.nextStepsEmpty')}</p>
                       ) : (
                         <ul>
-                          {nextSteps.map((item, index) => (
+                          {(isSegmentBasedFeedback ? (displayedSegment?.feedback.nextSteps ?? []) : nextSteps).map((item, index) => (
                             <li key={`${item}-${index}`}>{item}</li>
                           ))}
                         </ul>

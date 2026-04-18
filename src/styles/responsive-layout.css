@@ -1,0 +1,342 @@
+/* ====== Responsive Layout System ====== */
+
+/* Mobile-first breakpoints */
+/* Mobile: 0 - 767px */
+/* Tablet: 768px - 991px */
+/* Desktop: 992px+ */
+
+/* ===== Video Editor Layout ===== */
+
+.video-editor__body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.video-editor__player-wrap {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.video-editor__player-wrap video {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 16 / 9;
+}
+
+.video-editor__edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.video-editor__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.video-editor__action-btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+.video-editor__action-btn.video-editor__action-btn--clear {
+  background: #f8eaea;
+  color: #dc3545;
+  border: 1px solid #f0d0d0;
+}
+
+.video-editor__action-btn.video-editor__action-btn--clear:hover {
+  background: #f0d0d0;
+}
+
+/* ===== Analyze Page Layout ===== */
+
+.analyze-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.analyze-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analyze-sidebar {
+  display: none;
+}
+
+.analyze-video-section {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.analyze-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 16 / 9;
+}
+
+.analyze-drawing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.analyze-controls-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.analyze-steps-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Mobile Layout (< 768px) ===== */
+
+@media (max-width: 767px) {
+  .analyze-page {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .video-editor__body {
+    gap: 12px;
+  }
+
+  .video-editor__player-wrap {
+    border-radius: 8px;
+  }
+
+  .video-editor__edit-panel {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .video-editor__actions {
+    gap: 8px;
+  }
+
+  .video-editor__action-btn {
+    min-width: 100px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  .analyze-controls-section {
+    padding: 16px;
+    margin-bottom: 60px; /* Account for fixed toolbar */
+  }
+
+  .analyze-steps-section {
+    padding: 16px;
+  }
+
+  .playback-toolbar--mobile {
+    height: auto;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .drawing-toolbar--mobile {
+    max-height: 60vh;
+  }
+}
+
+/* ===== Tablet Layout (768px - 991px) ===== */
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .analyze-page {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .analyze-sidebar {
+    display: block;
+    width: 100%;
+    order: -1;
+  }
+
+  .video-editor__body {
+    gap: 16px;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .video-editor__player-wrap {
+    border-radius: 10px;
+    grid-column: 1;
+  }
+
+  .video-editor__edit-panel {
+    grid-column: 1;
+    padding: 18px;
+  }
+
+  .video-editor__actions {
+    gap: 10px;
+  }
+
+  .video-editor__action-btn {
+    min-width: 110px;
+  }
+}
+
+/* ===== Desktop Layout (992px+) ===== */
+
+@media (min-width: 992px) {
+  .analyze-page {
+    grid-template-columns: 0.16fr 1fr 0.24fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .analyze-sidebar {
+    display: block;
+  }
+
+  .analyze-main {
+    grid-column: 2;
+  }
+
+  .analyze-sidebar {
+    grid-column: 3;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+
+  .drawing-toolbar--desktop {
+    grid-column: 1;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+
+  .video-editor__body {
+    gap: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .video-editor__player-wrap {
+    min-height: 500px;
+  }
+
+  .video-editor__edit-panel {
+    padding: 24px;
+  }
+
+  .video-editor__actions {
+    gap: 12px;
+  }
+
+  .video-editor__action-btn {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+
+/* ===== Utility Classes ===== */
+
+.u-hidden-mobile {
+  display: none;
+}
+
+.u-hidden-tablet {
+  display: inherit;
+}
+
+.u-hidden-desktop {
+  display: inherit;
+}
+
+@media (min-width: 768px) {
+  .u-hidden-mobile {
+    display: inherit;
+  }
+
+  .u-hidden-tablet {
+    display: none;
+  }
+}
+
+@media (min-width: 992px) {
+  .u-hidden-tablet {
+    display: inherit;
+  }
+
+  .u-hidden-desktop {
+    display: none;
+  }
+}
+
+/* ===== Smooth Transitions ===== */
+
+@media (max-width: 991px) {
+  .analyze-page,
+  .video-editor__body,
+  .analyze-main {
+    transition: grid-template-columns 0.3s ease;
+  }
+}
+
+/* ===== Scrollbar Styling ===== */
+
+.analyze-sidebar::-webkit-scrollbar,
+.drawing-toolbar--desktop::-webkit-scrollbar {
+  width: 8px;
+}
+
+.analyze-sidebar::-webkit-scrollbar-track,
+.drawing-toolbar--desktop::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.analyze-sidebar::-webkit-scrollbar-thumb,
+.drawing-toolbar--desktop::-webkit-scrollbar-thumb {
+  background: #d9e1ea;
+  border-radius: 4px;
+}
+
+.analyze-sidebar::-webkit-scrollbar-thumb:hover,
+.drawing-toolbar--desktop::-webkit-scrollbar-thumb:hover {
+  background: #c0d0e0;
+}
+
+/* ===== Safe Area / Notch Support ===== */
+
+@supports (padding: max(0px)) {
+  .playback-toolbar--mobile {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .drawing-toolbar--mobile {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
