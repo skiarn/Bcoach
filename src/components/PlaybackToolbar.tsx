@@ -150,31 +150,68 @@ export const PlaybackToolbar: React.FC<PlaybackToolbarProps> = ({
   // Desktop/Tablet layout: horizontal with integrated seek bar
   return (
     <div className="playback-toolbar playback-toolbar--desktop">
-      {/* Main toolbar */}
-      <ResponsiveToolbar groups={buildToolbarGroups()} alignment="start" />
+      <div className="playback-toolbar__desktop-row">
+        <div className="playback-toolbar__desktop-left">
+          <button
+            type="button"
+            className="playback-toolbar__icon-btn playback-toolbar__icon-btn--play"
+            onClick={isPlaying ? onPause : onPlay}
+            disabled={!videoLoaded}
+            aria-label={isPlaying ? t('controls.pause') || 'Pause' : t('controls.play') || 'Play'}
+            title={isPlaying ? t('controls.pause') || 'Pause' : t('controls.play') || 'Play'}
+          >
+            {isPlaying ? <Icons.PauseIcon /> : <Icons.PlayIcon />}
+          </button>
+        </div>
 
-      {/* Seek bar section */}
-      <div className="playback-toolbar__seek-section-inline">
-        <input
-          className="playback-toolbar__seek-slider-inline"
-          type="range"
-          min="0"
-          max={sliderMax}
-          step={0.1}
-          value={seekTime}
-          onChange={(e) => {
-            const time = Number(e.target.value)
-            setSeekTime(time)
-          }}
-          onMouseUp={(e) => onSeek(Number(e.currentTarget.value))}
-          onTouchEnd={(e) => onSeek(Number(e.currentTarget.value))}
-          disabled={!videoLoaded}
-        />
+        <div className="playback-toolbar__seek-section-inline">
+          <input
+            className="playback-toolbar__seek-slider-inline"
+            type="range"
+            min="0"
+            max={sliderMax}
+            step={0.1}
+            value={seekTime}
+            onChange={(e) => {
+              const time = Number(e.target.value)
+              setSeekTime(time)
+            }}
+            onMouseUp={(e) => onSeek(Number(e.currentTarget.value))}
+            onTouchEnd={(e) => onSeek(Number(e.currentTarget.value))}
+            disabled={!videoLoaded}
+          />
 
-        <div className="playback-toolbar__time-inline">
-          <span>{formatTime(seekTime)}</span>
-          <span className="playback-toolbar__separator">|</span>
-          <span>{formatTime(duration)}</span>
+          <div className="playback-toolbar__time-inline">
+            <span>{formatTime(seekTime)}</span>
+            <span className="playback-toolbar__separator">|</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+
+        <div className="playback-toolbar__desktop-right">
+          {onToggleDrawing && (
+            <button
+              type="button"
+              className={`playback-toolbar__icon-btn ${showDrawingCanvas ? 'active' : ''}`}
+              onClick={onToggleDrawing}
+              aria-label={showDrawingCanvas ? t('controls.closeDrawing') || 'Close Drawing' : t('controls.openDrawing') || 'Open Drawing'}
+              title={showDrawingCanvas ? t('controls.closeDrawing') || 'Close Drawing' : t('controls.openDrawing') || 'Open Drawing'}
+            >
+              <Icons.LineIcon />
+            </button>
+          )}
+
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              className="playback-toolbar__icon-btn"
+              onClick={onToggleFullscreen}
+              aria-label={isFullscreen ? t('controls.exitFullscreen') || 'Exit Fullscreen' : t('controls.fullscreen') || 'Fullscreen'}
+              title={isFullscreen ? t('controls.exitFullscreen') || 'Exit Fullscreen' : t('controls.fullscreen') || 'Fullscreen'}
+            >
+              {isFullscreen ? <Icons.ExitFullscreenIcon /> : <Icons.FullscreenIcon />}
+            </button>
+          )}
         </div>
       </div>
     </div>

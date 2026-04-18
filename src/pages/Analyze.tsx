@@ -9,16 +9,16 @@ import DrawingToolbar from '../components/DrawingToolbar.tsx'
 import AppNav from '../components/AppNav.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
 import SkillPicker from '../components/SkillPicker.tsx'
+import VideoFeedbackOverlay from '../components/VideoFeedbackOverlay.tsx'
 import { findSkill, findSkillById, getSkills, Skill } from '../utils/skills.ts'
 import { getVideoDisplayName } from '../utils/helpers.ts'
 import { AnalysisSegment, EmbeddedAnalysisMetadata, Shape } from '../types/analysis.ts'
 import { appendMetadataToVideo, buildAnalyzedVideoFileName } from '../utils/videoMetadata.ts'
-import { addExportedVideoBlob, getVideoLibraryRecord, upsertVideoRecord } from '../services/videoLibrary.ts'
+import { addExportedVideoBlob } from '../services/videoLibrary.ts'
 import { DEFAULT_SPORT_ID, getSportLabel } from '../utils/sports.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
 import { useDeviceType } from '../hooks/useDeviceType.ts'
-import { applyVideoEdits } from '../utils/videoEditExport.ts'
 import { deriveLegacyFeedbackFromSegments, deriveLegacyNextStepsFromSegments } from '../utils/analysisMetadata.ts'
 
 interface VideoAnalysis {
@@ -49,7 +49,6 @@ type Tool = "line" | "circle" | "none";
 function Analyze({
   videoUrl: propVideoUrl,
   videoFile: propVideoFile,
-  libraryId: propLibraryId,
   embeddedMetadata: propEmbeddedMetadata,
   onBack,
   onNavigateHome,
@@ -62,8 +61,6 @@ function Analyze({
   const stateSkill: Skill | undefined = location.state?.skill
   const existingAnalysis = location.state?.analysis as VideoAnalysis | undefined
   const routeEmbeddedMetadata = location.state?.embeddedMetadata as EmbeddedAnalysisMetadata | undefined
-  const routeLibraryId = location.state?.libraryId as string | undefined
-  const libraryId = propLibraryId ?? routeLibraryId
   const embeddedMetadata = propEmbeddedMetadata ?? routeEmbeddedMetadata
   const metadataSkill = useMemo(
     () => findSkillById(embeddedMetadata?.skillId, locale) ?? findSkill(embeddedMetadata?.skillName, embeddedMetadata?.sportId ?? embeddedMetadata?.skillType, locale),
@@ -82,10 +79,7 @@ function Analyze({
     videoFile instanceof Blob ? videoFile : null
   )
   const [stableVideoUrl, setStableVideoUrl] = useState<string>('')
-  const [isApplyingEdits, setIsApplyingEdits] = useState(false)
-  const [editProgress, setEditProgress] = useState(0)
-  const [editError, setEditError] = useState<string | null>(null)
-  const { segments, addSegment, updateSegment, removeSegment, clearSegments, replaceSegments } = useVideoSegments()
+  const { segments, addSegment, updateSegment, removeSegment, replaceSegments } = useVideoSegments()
   const [analysisSegments, setAnalysisSegments] = useState<AnalysisSegment[]>([])
   const [selectedAnalysisSegmentId, setSelectedAnalysisSegmentId] = useState<string | null>(null)
 
@@ -150,11 +144,6 @@ function Analyze({
     return (
       <div className="analyze">
         <AppNav />
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button onClick={onBack}>← {t('common.back')}</button>
-          <h1>{t('analyze.titleNoVideo')}</h1>
-          <div></div>
-        </header>
         <p>{t('analyze.noVideo')}</p>
       </div>
     )
@@ -184,10 +173,7 @@ function Analyze({
   const [segmentSkillType, setSegmentSkillType] = useState<string>(derivedSkill?.sportId ?? DEFAULT_SPORT_ID)
   const [segmentSkillName, setSegmentSkillName] = useState<string>(derivedSkill?.name ?? '')
   const [followPlayback, setFollowPlayback] = useState(true)
-  const SEGMENT_TIME_EPSILON = 0.08
-
-  const fallbackFeedbackValues =
-    customFeedback.length > 0 ? customFeedback : (existingAnalysis?.feedback ?? embeddedMetadata?.feedback ?? [])
+  const [isVideoFeedbackOverlayEnabled, setIsVideoFeedbackOverlayEnabled] = useState(true)
 
   const selectedAnalysisSegment = useMemo(
     () => analysisSegments.find((segment) => segment.id === selectedAnalysisSegmentId) ?? null,
@@ -199,18 +185,32 @@ function Analyze({
       return null
     }
 
-    const matchingSegments = analysisSegments.filter(
-      (segment) =>
-        currentTime + SEGMENT_TIME_EPSILON >= segment.startTime &&
-        currentTime - SEGMENT_TIME_EPSILON <= segment.endTime
-    )
+    const matchingSegments = analysisSegments
+      .filter((segment) => currentTime >= segment.startTime && currentTime < segment.endTime)
+      .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime)
 
     return matchingSegments.length > 0 ? matchingSegments[matchingSegments.length - 1] : null
   }, [analysisSegments, currentTime])
 
   const playbackActiveSegmentId = playbackActiveSegment?.id ?? null
+  const feedbackDisplaySegment = followPlayback
+    ? (playbackActiveSegment ?? selectedAnalysisSegment)
+    : selectedAnalysisSegment
+  const videoOverlaySegment = playbackActiveSegment
+  const feedbackOverlayItems = videoOverlaySegment
+    ? [...videoOverlaySegment.feedback.checklist, ...videoOverlaySegment.feedback.notes]
+    : []
+  const feedbackOverlayNextSteps = videoOverlaySegment?.feedback.nextSteps ?? []
+  const shouldShowVideoFeedbackOverlay =
+    workspaceMode === 'segments' &&
+    isVideoFeedbackOverlayEnabled &&
+    Boolean(videoOverlaySegment) &&
+    (feedbackOverlayItems.length > 0 || feedbackOverlayNextSteps.length > 0)
 
-  const initialFeedbackValues = selectedAnalysisSegment?.feedback.checklist ?? fallbackFeedbackValues
+  const runtimePlaybackEdits = useMemo(
+    () => segments.filter((segment) => segment.action === 'remove' || segment.action === 'speed'),
+    [segments]
+  )
 
   const rawVideoName = videoFile instanceof File
     ? videoFile.name
@@ -222,6 +222,20 @@ function Analyze({
     () => (skill?.sportId ? getSportLabel(skill.sportId, locale) : undefined),
     [skill?.sportId, locale]
   )
+
+  const exportSportLabel = useMemo(() => {
+    if (sportLabel?.trim()) {
+      return sportLabel
+    }
+
+    const fallbackSportId =
+      segmentSkillType ||
+      embeddedMetadata?.sportId ||
+      existingAnalysis?.sportId ||
+      DEFAULT_SPORT_ID
+
+    return getSportLabel(fallbackSportId, locale)
+  }, [sportLabel, segmentSkillType, embeddedMetadata?.sportId, existingAnalysis?.sportId, locale])
 
   const videoName = useMemo(
     () => getVideoDisplayName(rawVideoName, {
@@ -258,14 +272,31 @@ function Analyze({
         : []
     setAnalysisSegments(toSortedAnalysisSegments(incomingAnalysisSegments))
 
-    replaceSegments(
-      incomingAnalysisSegments.map((segment: AnalysisSegment) => ({
-        id: segment.id,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        action: 'feedback',
-      }))
-    )
+    const incomingPlaybackEdits =
+      'playbackEdits' in embeddedMetadata && Array.isArray(embeddedMetadata.playbackEdits)
+        ? embeddedMetadata.playbackEdits
+        : []
+
+    if (incomingPlaybackEdits.length > 0) {
+      replaceSegments(
+        incomingPlaybackEdits.map((segment) => ({
+          id: segment.id,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          action: segment.action,
+          speedFactor: segment.speedFactor,
+        }))
+      )
+    } else {
+      replaceSegments(
+        incomingAnalysisSegments.map((segment: AnalysisSegment) => ({
+          id: segment.id,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          action: 'feedback',
+        }))
+      )
+    }
   }, [embeddedMetadata, existingAnalysis, replaceSegments])
 
   // Debug: Log when embeddedMetadata changes
@@ -351,6 +382,27 @@ function Analyze({
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
+      const rawTime = videoRef.current.currentTime
+      const removeSegment = runtimePlaybackEdits.find(
+        (segment) => segment.action === 'remove' && rawTime >= segment.startTime && rawTime < segment.endTime
+      )
+
+      if (removeSegment) {
+        const seekTarget = Math.min(removeSegment.endTime + 0.01, videoRef.current.duration || removeSegment.endTime)
+        videoRef.current.currentTime = seekTarget
+        setCurrentTime(seekTarget)
+        return
+      }
+
+      const speedSegment = runtimePlaybackEdits.find(
+        (segment) =>
+          segment.action === 'speed' &&
+          segment.speedFactor &&
+          rawTime >= segment.startTime &&
+          rawTime <= segment.endTime
+      )
+      videoRef.current.playbackRate = speedSegment?.speedFactor ?? 1
+
       const nextTime = videoRef.current.currentTime
       setCurrentTime(nextTime)
 
@@ -635,12 +687,6 @@ function Analyze({
     setAnalysisSegments((previous) => toSortedAnalysisSegments(previous.filter((segment) => segment.id !== id)))
   }
 
-  const handleClearAnalysisSegments = () => {
-    clearSegments()
-    setAnalysisSegments([])
-    setSelectedAnalysisSegmentId(null)
-  }
-
   const handleSelectAnalysisSegment = (segmentId: string, seekToStart = false) => {
     setSelectedAnalysisSegmentId(segmentId)
 
@@ -765,6 +811,19 @@ function Analyze({
       feedback: resolvedSegments.length > 0 ? deriveLegacyFeedbackFromSegments(resolvedSegments) : feedback,
       nextSteps: resolvedSegments.length > 0 ? deriveLegacyNextStepsFromSegments(resolvedSegments) : nextSteps,
       analysisSegments: resolvedSegments,
+      playbackEdits: segments
+        .filter((segment) => segment.action === 'remove' || segment.action === 'speed')
+        .map((segment) => {
+          const action = segment.action === 'speed' ? 'speed' : 'remove'
+
+          return {
+            id: segment.id,
+            startTime: segment.startTime,
+            endTime: segment.endTime,
+            action,
+            speedFactor: action === 'speed' ? segment.speedFactor : undefined,
+          }
+        }),
     }
   }
 
@@ -781,7 +840,7 @@ function Analyze({
 
       const fileName = buildAnalyzedVideoFileName(rawVideoName || videoName, {
         timestamp: existingAnalysis?.timestamp,
-        sportLabel,
+        sportLabel: exportSportLabel,
         skillName: skill?.name,
       })
       console.log('[Export] Attaching metadata with ffmpeg...')
@@ -817,88 +876,8 @@ function Analyze({
     deleteShapeById(selectedShapeId)
   }
 
-  const saveAnalysisToLibrary = async (nextShapes: Shape[]) => {
-    if (!libraryId) {
-      setSaveError(t('analyze.error.missingVideoId'))
-      return
-    }
-
-    setSaveError(null)
-
-    try {
-      const record = await getVideoLibraryRecord(libraryId)
-      if (!record) {
-        setSaveError(t('analyze.error.videoMissing'))
-        return
-      }
-
-      const metadata = buildMetadata(nextShapes)
-
-      console.log('[LibrarySave] Updating library record with metadata...')
-      const updatedBlob = workingVideoBlob ?? record.blob
-      const updatedRecord = {
-        ...record,
-        metadata,
-        blob: updatedBlob,
-        size: updatedBlob.size,
-        mimeType: updatedBlob.type || record.mimeType,
-        lastModified: Date.now(),
-      }
-      await upsertVideoRecord(updatedRecord)
-      console.log('[LibrarySave] Library record updated successfully')
-
-      setIsSaved(true)
-    } catch (error) {
-      const message = t('analyze.error.saveAnalysis')
-      console.error('[LibrarySave] Error:', message, error)
-      setSaveError(message)
-    }
-  }
-
   const saveAnalysis = () => {
     void handleSaveAnalysis(shapes)
-  };
-
-  const applySegmentEdits = async () => {
-    if (segments.length === 0) {
-      setEditError(t('editor.error.noSegments'))
-      return
-    }
-
-    setEditError(null)
-    setIsApplyingEdits(true)
-    setEditProgress(0)
-
-    try {
-      const sourceBlob = await getSourceVideoBlob()
-      const editedBlob = await applyVideoEdits(
-        sourceBlob,
-        videoName || 'video.mp4',
-        segments,
-        duration,
-        setEditProgress
-      )
-
-      if (videoRef.current) {
-        videoRef.current.pause()
-      }
-
-      setWorkingVideoBlob(editedBlob)
-      setIsPlaying(false)
-      setCurrentTime(0)
-      setDuration(0)
-      setVideoLoaded(false)
-      handleClearAnalysisSegments()
-    } catch {
-      setEditError(t('editor.error.exportFailed'))
-    } finally {
-      setIsApplyingEdits(false)
-      setEditProgress(0)
-    }
-  }
-
-  const quickSaveAnalysis = () => {
-    void saveAnalysisToLibrary(shapes)
   };
 
   const showVideoWorkspace = true
@@ -967,6 +946,15 @@ function Analyze({
             {t('analyze.segmentSelector.followPlayback')}
           </button>
 
+          <button
+            type="button"
+            className={`analyze-segment-selector__btn ${isVideoFeedbackOverlayEnabled ? 'active' : ''}`.trim()}
+            aria-pressed={isVideoFeedbackOverlayEnabled}
+            onClick={() => setIsVideoFeedbackOverlayEnabled((previous) => !previous)}
+          >
+            {t('analyze.segmentSelector.inVideoFeedback')}
+          </button>
+
           {showPauseButton && selectedAnalysisSegment && (
             <button
               type="button"
@@ -989,12 +977,6 @@ function Analyze({
     }
 
     const shouldShowLivePlaybackFeedback = followPlayback && isPlaying
-    const feedbackDisplaySegment = followPlayback
-      ? (playbackActiveSegment ?? selectedAnalysisSegment)
-      : selectedAnalysisSegment
-    const feedbackItems = feedbackDisplaySegment
-      ? [...feedbackDisplaySegment.feedback.checklist, ...feedbackDisplaySegment.feedback.notes]
-      : []
 
     return (
       <div className="analyze-inline-segment-feedback">
@@ -1031,9 +1013,9 @@ function Analyze({
                 <div className="analyze-live-feedback__columns">
                   <div>
                     <h4>{t('feedback.title')}</h4>
-                    {feedbackItems.length > 0 ? (
+                    {feedbackOverlayItems.length > 0 ? (
                       <ul>
-                        {feedbackItems.map((item, index) => (
+                        {feedbackOverlayItems.map((item, index) => (
                           <li key={`${feedbackDisplaySegment.id}-feedback-${index}`}>{item}</li>
                         ))}
                       </ul>
@@ -1062,11 +1044,6 @@ function Analyze({
   return (
     <div className={`analyze ${showDrawingCanvas ? 'analyze--drawing-mobile-open' : ''}`}>
       <AppNav />
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <button onClick={onBack}>← {t('common.back')}</button>
-        <h1>{t('analyze.title', { videoName })}</h1>
-        <div></div>
-      </header>
 
       <div style={{ position: 'relative', display: 'block' }}>
         {/* Video Section */}
@@ -1122,21 +1099,32 @@ function Analyze({
                 />
               </div>
             )}
-          </div>
 
-          <div className="analyze-workspace-controls">
-            <PlaybackToolbar
-              isPlaying={isPlaying}
-              currentTime={currentTime}
-              duration={duration}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onSeek={handleSeek}
-              videoLoaded={videoLoaded}
-              onToggleFullscreen={handleToggleFullscreen}
-              isFullscreen={isFullscreen}
+            <VideoFeedbackOverlay
+              visible={shouldShowVideoFeedbackOverlay}
+              startTimeLabel={videoOverlaySegment ? formatTime(videoOverlaySegment.startTime) : undefined}
+              nextStepsTitle={t('history.nextSteps')}
+              feedbackItems={feedbackOverlayItems}
+              nextStepItems={feedbackOverlayNextSteps}
+              emptyLabel={t('history.feedbackEmpty')}
             />
 
+            <div className="video-controls-overlay analyze-video-controls-overlay">
+              <PlaybackToolbar
+                isPlaying={isPlaying}
+                currentTime={currentTime}
+                duration={duration}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSeek={handleSeek}
+                videoLoaded={videoLoaded}
+                onToggleFullscreen={handleToggleFullscreen}
+                isFullscreen={isFullscreen}
+              />
+            </div>
+          </div>
+
+          <div className="analyze-workspace-mode-wrap">
             <div className="analyze-workspace-mode" role="tablist" aria-label="Workspace mode">
               <button
                 type="button"
@@ -1192,30 +1180,10 @@ function Analyze({
               />
 
               <div className="analyze-inline-segment-actions">
-                <button
-                  type="button"
-                  className="analyze-inline-btn analyze-inline-btn--apply"
-                  onClick={() => void applySegmentEdits()}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {isApplyingEdits
-                    ? t('analyze.edit.applying', { progress: Math.round(editProgress * 100) })
-                    : t('analyze.edit.apply')}
-                </button>
-
-                <button
-                  type="button"
-                  className="analyze-inline-btn"
-                  onClick={handleClearAnalysisSegments}
-                  disabled={segments.length === 0 || isApplyingEdits}
-                >
-                  {t('editor.clearSegments')}
-                </button>
+                <p style={{ margin: 0, color: '#475569', fontSize: '0.88rem' }}>
+                  {t('analyze.edit.help')}
+                </p>
               </div>
-
-              {editError && (
-                <p className="analyze-inline-error">{editError}</p>
-              )}
 
               {renderInlineSegmentFeedbackEditor()}
             </div>
@@ -1409,14 +1377,6 @@ function Analyze({
               </button>
               <button
                 type="button"
-                onClick={quickSaveAnalysis}
-                disabled={isExporting}
-                title={t('analyze.quickSave.title')}
-              >
-                {isExporting ? t('analyze.saving') : `💾 ${t('analyze.quickSave')}`}
-              </button>
-              <button
-                type="button"
                 onClick={saveAnalysis}
                 className="analyze-save-cta"
                 disabled={isExporting}
@@ -1430,14 +1390,6 @@ function Analyze({
             </div>
 
             {saveError && <p className="analyze-inline-error">{saveError}</p>}
-
-            <p style={{ marginTop: '10px', color: '#475569' }}>
-              {t('analyze.save.feedbackPoints', {
-                count: analysisSegments.length > 0
-                  ? deriveLegacyFeedbackFromSegments(analysisSegments).length
-                  : initialFeedbackValues.length,
-              })}
-            </p>
 
             {isSaved && (
               <p style={{ marginTop: '6px', color: '#166534', fontWeight: 600 }}>

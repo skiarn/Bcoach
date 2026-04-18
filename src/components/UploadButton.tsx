@@ -5,6 +5,7 @@ import { extractMetadataFromVideo } from '../utils/videoMetadata.ts'
 import { addImportedVideoFile } from '../services/videoLibrary.ts'
 import { getFfmpeg } from '../utils/ffmpegClient.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
+import * as Icons from './ui/Icons.tsx'
 
 interface UploadButtonProps {
   onVideoSelect: (video: File | Blob, url: string, metadata?: EmbeddedAnalysisMetadata, libraryId?: string) => void
@@ -308,18 +309,20 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       type="button"
                       onClick={handleFlipCamera}
                       className="camera-ctrl-btn"
+                      aria-label={facingMode === 'user' ? t('upload.flipRear') : t('upload.flipFront')}
                       title={facingMode === 'user' ? t('upload.flipRear') : t('upload.flipFront')}
                     >
-                      🔄
+                      {facingMode === 'user' ? <Icons.CameraRearIcon width={18} height={18} /> : <Icons.CameraFrontIcon width={18} height={18} />}
                     </button>
 
                     <button
                       type="button"
                       onClick={handleToggleOrientation}
                       className="camera-ctrl-btn"
+                      aria-label={isLandscape ? t('upload.orientationPortrait') : t('upload.orientationLandscape')}
                       title={isLandscape ? t('upload.orientationPortrait') : t('upload.orientationLandscape')}
                     >
-                      {isLandscape ? '↕️' : '↔️'}
+                      {isLandscape ? <Icons.PortraitIcon width={18} height={18} /> : <Icons.LandscapeIcon width={18} height={18} />}
                     </button>
                   </>
                 )}
@@ -330,8 +333,9 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                       type="button"
                       onClick={cancelCamera}
                       className="recording-cancel-btn"
+                      aria-label={t('upload.cancel')}
                     >
-                      ✕
+                      <Icons.CloseIcon width={18} height={18} />
                     </button>
                   ) : (
                     <div className="recording-controls">
@@ -342,28 +346,31 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                           onChange={(e) => setRecordingDelay(Number(e.target.value))}
                           className="recording-delay-select"
                           title={t('upload.delay.title')}
+                          aria-label={t('upload.delay.title')}
                         >
-                          <option value={0}>⏱️ {t('upload.delay.none')}</option>
-                          <option value={3}>⏱️ {t('upload.delay.seconds', { seconds: 3 })}</option>
-                          <option value={5}>⏱️ {t('upload.delay.seconds', { seconds: 5 })}</option>
-                          <option value={10}>⏱️ {t('upload.delay.seconds', { seconds: 10 })}</option>
+                          <option value={0}>{t('upload.delay.none')}</option>
+                          <option value={3}>{t('upload.delay.seconds', { seconds: 3 })}</option>
+                          <option value={5}>{t('upload.delay.seconds', { seconds: 5 })}</option>
+                          <option value={10}>{t('upload.delay.seconds', { seconds: 10 })}</option>
                         </select>
                       </div>
                       <button
                         type="button"
                         onClick={handleStartWithDelay}
                         className="recording-start-btn"
+                        aria-label={t('upload.startRecording')}
                         title={t('upload.startRecording')}
                       >
-                        ⏺️
+                        <Icons.RecordIcon width={20} height={20} />
                       </button>
                       <button
                         type="button"
                         onClick={cancelCamera}
                         className="recording-cancel-btn"
+                        aria-label={t('upload.cancel')}
                         title={t('upload.cancel')}
                       >
-                        ✕
+                        <Icons.CloseIcon width={18} height={18} />
                       </button>
                     </div>
                   )
@@ -372,9 +379,10 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
                     type="button"
                     onClick={stopRecording}
                     className="recording-stop-btn"
+                    aria-label={t('upload.stopRecording')}
                     title={t('upload.stopRecording')}
                   >
-                    ⏹️
+                    <Icons.StopIcon width={20} height={20} />
                   </button>
                 )}
               </div>
@@ -398,6 +406,7 @@ function UploadButton({ onVideoSelect }: UploadButtonProps): JSX.Element {
           onClick={handleOpenCamera}
           className="record-button"
         >
+          <Icons.RecordIcon width={16} height={16} />
           {t('upload.recordVideo')}
         </button>
       </div>

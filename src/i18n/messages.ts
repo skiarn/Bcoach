@@ -60,13 +60,10 @@ export const UI_MESSAGES = {
     "controls.play": "Spela",
     "controls.pause": "Paus",
 
-    "analyze.title": "Videoanalys: {videoName}",
+    "analyze.title": "Videoanalys: {sport}",
     "analyze.titleNoVideo": "Videoanalys",
     "analyze.noVideo": "Ingen video vald. Valj en video forst.",
     "analyze.step1": "Rita",
-    "analyze.step2": "Feedback",
-    "analyze.step3": "Nasta steg",
-    "analyze.step4": "Spara",
     "analyze.tool.line": "Linje",
     "analyze.tool.circle": "Cirkel",
     "analyze.tool.none": "Ingen",
@@ -83,28 +80,20 @@ export const UI_MESSAGES = {
     "analyze.edit.title": "Redigera video (ta bort/snabba upp segment)",
     "analyze.edit.help":
       "Skapa segment i tidslinjen och applicera innan du fortsatter med feedback och export.",
-    "analyze.edit.apply": "Applicera redigeringar",
-    "analyze.edit.applying": "Applicerar... {progress}%",
     "analyze.segmentSelector.title": "Valj segment for feedback",
     "analyze.segmentSelector.empty":
       "Skapa minst ett segment for att lagga feedback per forsok.",
     "analyze.segmentSelector.item": "Forsok {index}: {start}-{end}",
     "analyze.segmentSelector.pauseAt": "Pausa vid segmentstart ({time})",
     "analyze.segmentSelector.followPlayback": "Folj uppspelning",
+    "analyze.segmentSelector.inVideoFeedback": "Feedback pa video",
     "analyze.nextSteps.skillLabel":
       "Valj sport och teknik for att fa relevanta nasta steg",
-    "analyze.save.ready":
-      "Redo att spara videon - valj antingen lokalt spara (i biblioteket) eller exportera (ladda ner med metadata).",
     "analyze.save.feedbackPoints": "Feedbackpunkter: {count}",
-    "analyze.save.nextSteps": "Nasta steg: {count}",
-    "analyze.save.help":
-      "Lokalt spara sparar analysen i biblioteket. Exportera skapar en ny fil med all data inbrannad i videons metadata.",
     "analyze.saved.title": "Analysen ar sparad",
     "analyze.saved.body":
       "Du kan nu oppna videon igen och samma analys kommer att visas.",
     "analyze.saved.cta": "Ova och spela in igen",
-    "analyze.prev": "Foregaende",
-    "analyze.next": "Nasta",
     "analyze.quickSave.title":
       "Spara analysen i biblioteket utan att ladda ned",
     "analyze.quickSave": "Spara lokalt",
@@ -113,10 +102,6 @@ export const UI_MESSAGES = {
     "analyze.export": "Exportera och ladda ned",
     "analyze.exporting": "Exporterar...",
     "analyze.exported": "Exporterad",
-    "analyze.stepTitle.draw": "Steg 1: Rita och redigera video",
-    "analyze.stepTitle.feedback": "Steg 2: Fyll i feedback",
-    "analyze.stepTitle.nextSteps": "Steg 3: Valj nasta steg",
-    "analyze.stepTitle.save": "Steg 4: Spara analys",
     "analyze.error.readVideo": "Kunde inte lasa videofilen for export.",
     "analyze.error.saveVideo": "Kunde inte spara videon just nu.",
     "analyze.error.missingVideoId": "Kunde inte spara: Video-ID saknas",
@@ -134,7 +119,6 @@ export const UI_MESSAGES = {
     "history.selectVideo":
       "Valj en video fran listan for att visa analysinnehall.",
     "history.openAnalyze": "Oppna i analys",
-    "history.openEditor": "Redigera video",
     "history.feedback": "Feedback",
     "history.feedbackEmpty": "Ingen sparad feedback.",
     "history.nextSteps": "Nasta steg",
@@ -296,13 +280,10 @@ export const UI_MESSAGES = {
     "controls.play": "Play",
     "controls.pause": "Pause",
 
-    "analyze.title": "Video analysis: {videoName}",
+    "analyze.title": "Video analysis: {sport}",
     "analyze.titleNoVideo": "Video analysis",
     "analyze.noVideo": "No video selected. Select a video first.",
     "analyze.step1": "Draw",
-    "analyze.step2": "Feedback",
-    "analyze.step3": "Next steps",
-    "analyze.step4": "Save",
     "analyze.tool.line": "Line",
     "analyze.tool.circle": "Circle",
     "analyze.tool.none": "None",
@@ -320,28 +301,20 @@ export const UI_MESSAGES = {
     "analyze.edit.title": "Edit video (remove/speed segments)",
     "analyze.edit.help":
       "Create segments in the timeline and apply them before feedback and export.",
-    "analyze.edit.apply": "Apply edits",
-    "analyze.edit.applying": "Applying... {progress}%",
     "analyze.segmentSelector.title": "Choose segment for feedback",
     "analyze.segmentSelector.empty":
       "Create at least one segment to attach feedback per attempt.",
     "analyze.segmentSelector.item": "Attempt {index}: {start}-{end}",
     "analyze.segmentSelector.pauseAt": "Pause at segment start ({time})",
     "analyze.segmentSelector.followPlayback": "Follow playback",
+    "analyze.segmentSelector.inVideoFeedback": "In-video feedback",
     "analyze.nextSteps.skillLabel":
       "Choose sport and technique to get relevant next steps",
-    "analyze.save.ready":
-      "Ready to save the video. Choose either local save (library) or export (download with metadata).",
     "analyze.save.feedbackPoints": "Feedback points: {count}",
-    "analyze.save.nextSteps": "Next steps: {count}",
-    "analyze.save.help":
-      "Local save stores the analysis in your library. Export creates a new file with all data embedded in metadata.",
     "analyze.saved.title": "Analysis saved",
     "analyze.saved.body":
       "You can now open the video again and the same analysis will be shown.",
     "analyze.saved.cta": "Practice and record again",
-    "analyze.prev": "Previous",
-    "analyze.next": "Next",
     "analyze.quickSave.title": "Save analysis in library without downloading",
     "analyze.quickSave": "Save local",
     "analyze.saving": "Saving...",
@@ -349,10 +322,6 @@ export const UI_MESSAGES = {
     "analyze.export": "Export and download",
     "analyze.exporting": "Exporting...",
     "analyze.exported": "Exported",
-    "analyze.stepTitle.draw": "Step 1: Draw and edit video",
-    "analyze.stepTitle.feedback": "Step 2: Fill in feedback",
-    "analyze.stepTitle.nextSteps": "Step 3: Choose next steps",
-    "analyze.stepTitle.save": "Step 4: Save analysis",
     "analyze.error.readVideo": "Could not read video file for export.",
     "analyze.error.saveVideo": "Could not save the video right now.",
     "analyze.error.missingVideoId": "Could not save: Missing video ID",
@@ -369,7 +338,6 @@ export const UI_MESSAGES = {
       "Tip: switch to Videos to open and edit a specific recording.",
     "history.selectVideo": "Select a video from the list to view analysis.",
     "history.openAnalyze": "Open in analysis",
-    "history.openEditor": "Edit video",
     "history.feedback": "Feedback",
     "history.feedbackEmpty": "No saved feedback.",
     "history.nextSteps": "Next steps",
@@ -530,14 +498,11 @@ export const UI_MESSAGES = {
     "controls.play": "Reproducir",
     "controls.pause": "Pausa",
 
-    "analyze.title": "Análisis de video: {videoName}",
+    "analyze.title": "Análisis de video: {sport}",
     "analyze.titleNoVideo": "Análisis de video",
     "analyze.noVideo":
       "Ningún video seleccionado. Selecciona un video primero.",
     "analyze.step1": "Dibujar",
-    "analyze.step2": "Retroalimentación",
-    "analyze.step3": "Próximos pasos",
-    "analyze.step4": "Guardar",
     "analyze.tool.line": "Línea",
     "analyze.tool.circle": "Círculo",
     "analyze.tool.none": "Ninguno",
@@ -555,28 +520,20 @@ export const UI_MESSAGES = {
     "analyze.edit.title": "Editar video (quitar/acelerar segmentos)",
     "analyze.edit.help":
       "Crea segmentos en la línea de tiempo y aplícalos antes de la retroalimentación y la exportación.",
-    "analyze.edit.apply": "Aplicar ediciones",
-    "analyze.edit.applying": "Aplicando... {progress}%",
     "analyze.segmentSelector.title": "Elige segmento para feedback",
     "analyze.segmentSelector.empty":
       "Crea al menos un segmento para agregar feedback por intento.",
     "analyze.segmentSelector.item": "Intento {index}: {start}-{end}",
     "analyze.segmentSelector.pauseAt": "Pausar al inicio del segmento ({time})",
     "analyze.segmentSelector.followPlayback": "Seguir reproduccion",
+    "analyze.segmentSelector.inVideoFeedback": "Feedback en video",
     "analyze.nextSteps.skillLabel":
       "Elige deporte y técnica para obtener próximos pasos relevantes",
-    "analyze.save.ready":
-      "Listo para guardar el video. Elige guardar localmente (biblioteca) o exportar (descargar con metadatos).",
     "analyze.save.feedbackPoints": "Puntos de retroalimentación: {count}",
-    "analyze.save.nextSteps": "Próximos pasos: {count}",
-    "analyze.save.help":
-      "Guardar localmente almacena el análisis en tu biblioteca. Exportar crea un nuevo archivo con todos los datos en los metadatos.",
     "analyze.saved.title": "Análisis guardado",
     "analyze.saved.body":
       "Ahora puedes abrir el video de nuevo y se mostrará el mismo análisis.",
     "analyze.saved.cta": "Practica y graba de nuevo",
-    "analyze.prev": "Anterior",
-    "analyze.next": "Siguiente",
     "analyze.quickSave.title":
       "Guardar análisis en la biblioteca sin descargar",
     "analyze.quickSave": "Guardar local",
@@ -585,10 +542,6 @@ export const UI_MESSAGES = {
     "analyze.export": "Exportar y descargar",
     "analyze.exporting": "Exportando...",
     "analyze.exported": "Exportado",
-    "analyze.stepTitle.draw": "Paso 1: Dibujar y editar video",
-    "analyze.stepTitle.feedback": "Paso 2: Completar retroalimentación",
-    "analyze.stepTitle.nextSteps": "Paso 3: Elegir próximos pasos",
-    "analyze.stepTitle.save": "Paso 4: Guardar análisis",
     "analyze.error.readVideo":
       "No se pudo leer el archivo de video para exportar.",
     "analyze.error.saveVideo": "No se pudo guardar el video en este momento.",
@@ -607,7 +560,6 @@ export const UI_MESSAGES = {
     "history.selectVideo":
       "Selecciona un video de la lista para ver el análisis.",
     "history.openAnalyze": "Abrir en análisis",
-    "history.openEditor": "Editar video",
     "history.feedback": "Retroalimentación",
     "history.feedbackEmpty": "Sin retroalimentación guardada.",
     "history.nextSteps": "Próximos pasos",

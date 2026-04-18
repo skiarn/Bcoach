@@ -395,6 +395,9 @@ body {
   font-size: 16px;
   transition: background-color 0.2s;
   margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .record-button:hover {
@@ -464,6 +467,14 @@ body {
   justify-content: center;
   min-width: 40px;
   height: 40px;
+}
+
+.camera-ctrl-btn svg,
+.recording-start-btn svg,
+.recording-stop-btn svg,
+.recording-cancel-btn svg,
+.record-button svg {
+  display: block;
 }
 
 .camera-ctrl-btn:hover {
@@ -1880,7 +1891,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 68%, transparent 100%);
+  background: transparent;
   padding: 24px 6px 6px;
   opacity: 1;
   transition: opacity 0.2s ease;
@@ -1902,6 +1913,62 @@ body {
 .video-stage.is-fullscreen:hover .video-controls-overlay,
 .video-stage.is-fullscreen .video-controls-overlay:focus-within {
   opacity: 1;
+}
+
+.video-feedback-overlay {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 22;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.video-feedback-overlay__card {
+  width: min(920px, 100%);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 12px;
+  backdrop-filter: none;
+  color: #f8fafc;
+  padding: 10px 12px;
+}
+
+.video-feedback-overlay__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.video-feedback-overlay__grid h4 {
+  margin: 0 0 6px;
+  font-size: 0.84rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.95);
+}
+
+.video-feedback-overlay__grid ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  max-height: min(22vh, 180px);
+  overflow-y: auto;
+}
+
+.video-feedback-overlay__grid p {
+  margin: 0;
+  color: rgba(203, 213, 225, 0.92);
+}
+
+.video-feedback-overlay__start-time {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.88);
 }
 
 .analyze-inline-tools {
@@ -1996,6 +2063,23 @@ body {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(0, 0, 0, 0.3);
+}
+
+.analyze-video-controls-overlay {
+  z-index: 25;
+}
+
+.analyze-video-controls-overlay .playback-toolbar {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+}
+
+.analyze-workspace-mode-wrap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .analyze-workspace-controls {
@@ -2234,7 +2318,37 @@ body {
 @media (max-width: 767px) {
   .video-controls-overlay {
     padding: 12px 4px 4px;
-    background: linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.68) 62%, transparent 100%);
+    background: transparent;
+  }
+
+  .video-feedback-overlay {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .video-feedback-overlay__card {
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+
+  .video-feedback-overlay__grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .video-feedback-overlay__grid h4 {
+    font-size: 0.76rem;
+  }
+
+  .video-feedback-overlay__grid ul {
+    max-height: 86px;
+    font-size: 0.82rem;
+  }
+
+  .video-feedback-overlay__start-time {
+    margin-top: 6px;
+    font-size: 0.72rem;
   }
 
   .analyze-inline-tools {

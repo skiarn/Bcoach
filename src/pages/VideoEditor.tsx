@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppNav from '../components/AppNav.tsx'
 import PlaybackToolbar from '../components/PlaybackToolbar.tsx'
 import EditTimeline from '../components/EditTimeline.tsx'
-import EditProgressOverlay from '../components/EditProgressOverlay.tsx'
 import { useVideoSegments } from '../hooks/useVideoSegments.ts'
-import { applyVideoEdits } from '../utils/videoEditExport.ts'
 import { useI18n } from '../i18n/I18nProvider.tsx'
 import {
   getVideoLibraryRecord,
   upsertVideoRecord,
   VideoLibraryRecord,
 } from '../services/videoLibrary.ts'
+import { EmbeddedAnalysisMetadataV3, PlaybackEditSegment } from '../types/analysis.ts'
+import { createEmptyMetadata, normalizeEmbeddedAnalysisMetadata } from '../utils/analysisMetadata.ts'
 
 function VideoEditor(): JSX.Element {
   const { t } = useI18n()
@@ -19,6 +19,7 @@ function VideoEditor(): JSX.Element {
   const { videoId } = useParams<{ videoId: string }>()
 
   const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [record, setRecord] = useState<VideoLibraryRecord | null>(null)
   const [videoUrl, setVideoUrl] = useState<string>('')
@@ -28,12 +29,13 @@ function VideoEditor(): JSX.Element {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const basePlaybackRate = 1
 
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const { segments, addSegment, updateSegment, removeSegment, clearSegments } = useVideoSegments()
+  const { segments, addSegment, updateSegment, removeSegment, replaceSegments } = useVideoSegments()
 
   useEffect(() => {
     if (!videoId) {
@@ -54,6 +56,17 @@ function VideoEditor(): JSX.Element {
           return
         }
         setRecord(rec)
+        if (rec.metadata?.schemaVersion === 3) {
+          replaceSegments(
+            (rec.metadata.playbackEdits ?? []).map((segment) => ({
+              id: segment.id,
+              startTime: segment.startTime,
+              endTime: segment.endTime,
+              action: segment.action,
+              speedFactor: segment.speedFactor,
+            }))
+          )
+        }
         objectUrl = URL.createObjectURL(rec.blob)
         setVideoUrl(objectUrl)
       } catch {
@@ -69,7 +82,18 @@ function VideoEditor(): JSX.Element {
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [videoId, t])
+  }, [videoId, t, replaceSegments])
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === containerRef.current)
+    }
+
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange)
+    }
+  }, [])
 
   const handlePlay = () => {
     if (!videoRef.current) return
@@ -86,57 +110,100 @@ function VideoEditor(): JSX.Element {
     setCurrentTime(time)
   }
 
-  const handleSave = async (replaceOriginal: boolean) => {
-    if (!record || !record.blob) return
-    if (segments.length === 0) {
-      setSaveError(t('editor.error.noSegments'))
+  const handleToggleFullscreen = async () => {
+    if (!containerRef.current) {
       return
     }
 
+    try {
+      if (document.fullscreenElement === containerRef.current) {
+        await document.exitFullscreen()
+      } else {
+        await containerRef.current.requestFullscreen()
+      }
+    } catch {
+      // Ignore fullscreen API failures on unsupported devices.
+    }
+  }
+
+  const runtimePlaybackEdits = useMemo(
+    () => segments.filter((segment) => segment.action === 'remove' || segment.action === 'speed'),
+    [segments]
+  )
+
+  useEffect(() => {
+    if (!videoRef.current) {
+      return
+    }
+
+    const removeSegment = runtimePlaybackEdits.find(
+      (segment) =>
+        segment.action === 'remove' &&
+        currentTime >= segment.startTime &&
+        currentTime < segment.endTime
+    )
+
+    if (removeSegment) {
+      const seekTarget = Math.min(removeSegment.endTime + 0.01, videoRef.current.duration || removeSegment.endTime)
+      videoRef.current.currentTime = seekTarget
+      setCurrentTime(seekTarget)
+      return
+    }
+
+    const activeSpeedSegment = runtimePlaybackEdits.find(
+      (segment) =>
+        segment.action === 'speed' &&
+        segment.speedFactor &&
+        currentTime >= segment.startTime &&
+        currentTime <= segment.endTime
+    )
+
+    videoRef.current.playbackRate = activeSpeedSegment?.speedFactor ?? basePlaybackRate
+  }, [currentTime, runtimePlaybackEdits, basePlaybackRate])
+
+  const handleSaveMetadataEdits = async () => {
+    if (!record) return
+
     setSaveError(null)
-    setIsProcessing(true)
-    setProgress(0)
+    setIsSaving(true)
 
     try {
-      const edited = await applyVideoEdits(
-        record.blob,
-        record.name,
-        segments,
-        duration,
-        setProgress
-      )
+      const normalizedMetadata =
+        normalizeEmbeddedAnalysisMetadata(record.metadata) ??
+        (createEmptyMetadata() as EmbeddedAnalysisMetadataV3)
 
-      if (replaceOriginal) {
-        const updatedRecord: VideoLibraryRecord = {
-          ...record,
-          blob: edited,
-          size: edited.size,
-          mimeType: edited.type || 'video/mp4',
-          lastModified: Date.now(),
+      const playbackEdits: PlaybackEditSegment[] = runtimePlaybackEdits.map((segment) => {
+        const action = segment.action === 'speed' ? 'speed' : 'remove'
+
+        return {
+          id: segment.id,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          action,
+          speedFactor: action === 'speed' ? segment.speedFactor : undefined,
         }
-        await upsertVideoRecord(updatedRecord)
-      } else {
-        const newName = record.name.replace(/(\.[^.]+)?$/, `-edited$1`)
-        const newRecord: VideoLibraryRecord = {
-          id: `video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          name: newName,
-          mimeType: edited.type || 'video/mp4',
-          size: edited.size,
-          createdAt: Date.now(),
-          source: 'imported',
-          metadata: record.metadata,
-          blob: edited,
-        }
-        await upsertVideoRecord(newRecord)
+      })
+
+      const metadata: EmbeddedAnalysisMetadataV3 = {
+        ...normalizedMetadata,
+        schemaVersion: 3,
+        savedAt: Date.now(),
+        playbackEdits,
       }
 
+      const updatedRecord: VideoLibraryRecord = {
+        ...record,
+        metadata,
+        lastModified: Date.now(),
+      }
+
+      await upsertVideoRecord(updatedRecord)
       navigate('/history')
     } catch (err) {
       const message = err instanceof Error ? err.message : t('editor.error.exportFailed')
       setSaveError(message)
     } finally {
-      setIsProcessing(false)
-      setProgress(0)
+      setIsSaving(false)
     }
   }
 
@@ -165,8 +232,6 @@ function VideoEditor(): JSX.Element {
 
   return (
     <div className="video-editor">
-      {isProcessing && <EditProgressOverlay progress={progress} />}
-
       <AppNav />
 
       <header className="page-header">
@@ -185,7 +250,7 @@ function VideoEditor(): JSX.Element {
 
       <div className="video-editor__body">
         {/* Video player */}
-        <div className="video-editor__player-wrap">
+        <div ref={containerRef} className={`video-editor__player-wrap ${isFullscreen ? 'is-fullscreen' : ''}`}>
           <video
             ref={videoRef}
             src={videoUrl}
@@ -209,6 +274,8 @@ function VideoEditor(): JSX.Element {
               onPause={handlePause}
               onSeek={handleSeek}
               videoLoaded={true}
+              onToggleFullscreen={handleToggleFullscreen}
+              isFullscreen={isFullscreen}
             />
           </div>
         </div>
@@ -232,29 +299,11 @@ function VideoEditor(): JSX.Element {
           <div className="video-editor__actions">
             <button
               type="button"
-              className="video-editor__action-btn video-editor__action-btn--clear"
-              onClick={clearSegments}
-              disabled={segments.length === 0 || isProcessing}
-            >
-              ✕ {t('editor.clearSegments')}
-            </button>
-
-            <button
-              type="button"
-              className="video-editor__action-btn video-editor__action-btn--save-new"
-              onClick={() => void handleSave(false)}
-              disabled={segments.length === 0 || isProcessing}
-            >
-              💾 {t('editor.saveNew')}
-            </button>
-
-            <button
-              type="button"
               className="video-editor__action-btn video-editor__action-btn--replace"
-              onClick={() => void handleSave(true)}
-              disabled={segments.length === 0 || isProcessing}
+              onClick={() => void handleSaveMetadataEdits()}
+              disabled={isSaving}
             >
-              🔄 {t('editor.replace')}
+              {isSaving ? t('analyze.saving') : `💾 ${t('analyze.quickSave')}`}
             </button>
           </div>
         </div>

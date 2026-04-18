@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppNav from '../components/AppNav.tsx'
 import Controls from '../components/Controls.tsx'
 import ShapeOverlay from '../components/ShapeOverlay.tsx'
+import VideoFeedbackOverlay from '../components/VideoFeedbackOverlay.tsx'
 import HistoryDashboard from '../components/history/HistoryDashboard.tsx'
 import HistorySkillGroups from '../components/history/HistorySkillGroups.tsx'
 import { computeDashboardStats, DashboardRange, groupItemsBySkill } from '../components/history/historyData.ts'
@@ -17,7 +18,7 @@ import {
   VideoLibraryListItem,
   VideoLibraryRecord,
 } from '../services/videoLibrary.ts'
-import { AnalysisSegment } from '../types/analysis.ts'
+import { AnalysisSegment, PlaybackEditSegment } from '../types/analysis.ts'
 
 function formatDate(timestamp: number, locale: string): string {
   return new Date(timestamp).toLocaleDateString(locale === 'en' ? 'en-US' : 'sv-SE', {
@@ -38,7 +39,6 @@ function formatBytes(bytes: number): string {
 
 function History(): JSX.Element {
   const { t, locale } = useI18n()
-  const SEGMENT_TIME_EPSILON = 0.08
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<VideoLibraryListItem[]>([])
@@ -54,11 +54,12 @@ function History(): JSX.Element {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playbackRate, setPlaybackRate] = useState(1)
+  const [basePlaybackRate, setBasePlaybackRate] = useState(1)
   const [overlayWidth, setOverlayWidth] = useState(0)
   const [overlayHeight, setOverlayHeight] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [followPlayback, setFollowPlayback] = useState(true)
+  const [isVideoFeedbackOverlayEnabled, setIsVideoFeedbackOverlayEnabled] = useState(true)
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null)
 
   const refreshItems = async () => {
@@ -146,6 +147,13 @@ function History(): JSX.Element {
   }, [selectedRecord])
 
   const shapes = useMemo(() => selectedRecord?.metadata?.shapes ?? [], [selectedRecord])
+  const playbackEdits = useMemo<PlaybackEditSegment[]>(() => {
+    if (!selectedRecord?.metadata || selectedRecord.metadata.schemaVersion !== 3) {
+      return []
+    }
+
+    return [...(selectedRecord.metadata.playbackEdits ?? [])].sort((a, b) => a.startTime - b.startTime)
+  }, [selectedRecord])
   const analysisSegments = useMemo<AnalysisSegment[]>(() => {
     if (!selectedRecord?.metadata || selectedRecord.metadata.schemaVersion !== 3) {
       return []
@@ -159,11 +167,9 @@ function History(): JSX.Element {
       return null
     }
 
-    const matchingSegments = analysisSegments.filter(
-      (segment) =>
-        currentTime + SEGMENT_TIME_EPSILON >= segment.startTime &&
-        currentTime - SEGMENT_TIME_EPSILON <= segment.endTime
-    )
+    const matchingSegments = analysisSegments
+      .filter((segment) => currentTime >= segment.startTime && currentTime < segment.endTime)
+      .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime)
 
     return matchingSegments.length > 0 ? matchingSegments[matchingSegments.length - 1] : null
   }, [analysisSegments, currentTime])
@@ -185,6 +191,7 @@ function History(): JSX.Element {
   )
 
   const displayedSegment = followPlayback ? playbackActiveSegment : selectedSegment
+  const videoOverlaySegment = playbackActiveSegment
 
   const feedback = useMemo(() => selectedRecord?.metadata?.feedback ?? [], [selectedRecord])
   const nextSteps = useMemo(() => selectedRecord?.metadata?.nextSteps ?? [], [selectedRecord])
@@ -193,6 +200,15 @@ function History(): JSX.Element {
     () => (displayedSegment ? [...displayedSegment.feedback.checklist, ...displayedSegment.feedback.notes] : []),
     [displayedSegment]
   )
+  const overlayFeedbackItems = useMemo(
+    () => (videoOverlaySegment ? [...videoOverlaySegment.feedback.checklist, ...videoOverlaySegment.feedback.notes] : []),
+    [videoOverlaySegment]
+  )
+  const overlayNextStepItems = videoOverlaySegment?.feedback.nextSteps ?? []
+  const shouldShowVideoFeedbackOverlay =
+    isVideoFeedbackOverlayEnabled &&
+    Boolean(videoOverlaySegment) &&
+    (overlayFeedbackItems.length > 0 || overlayNextStepItems.length > 0)
 
   const dashboardStats = useMemo(
     () => computeDashboardStats(items, dashboardRange),
@@ -220,9 +236,49 @@ function History(): JSX.Element {
 
   const handleSpeedChange = (speed: number) => {
     if (!videoRef.current) return
-    videoRef.current.playbackRate = speed
-    setPlaybackRate(speed)
+    setBasePlaybackRate(speed)
+
+    const currentVideoTime = videoRef.current.currentTime
+    const activeSpeedSegment = playbackEdits.find(
+      (segment) =>
+        segment.action === 'speed' &&
+        segment.speedFactor &&
+        currentVideoTime >= segment.startTime &&
+        currentVideoTime <= segment.endTime
+    )
+
+    videoRef.current.playbackRate = activeSpeedSegment?.speedFactor ?? speed
   }
+
+  useEffect(() => {
+    if (!videoRef.current) {
+      return
+    }
+
+    const removeSegment = playbackEdits.find(
+      (segment) =>
+        segment.action === 'remove' &&
+        currentTime >= segment.startTime &&
+        currentTime < segment.endTime
+    )
+
+    if (removeSegment) {
+      const seekTarget = Math.min(removeSegment.endTime + 0.01, videoRef.current.duration || removeSegment.endTime)
+      videoRef.current.currentTime = seekTarget
+      setCurrentTime(seekTarget)
+      return
+    }
+
+    const activeSpeedSegment = playbackEdits.find(
+      (segment) =>
+        segment.action === 'speed' &&
+        segment.speedFactor &&
+        currentTime >= segment.startTime &&
+        currentTime <= segment.endTime
+    )
+
+    videoRef.current.playbackRate = activeSpeedSegment?.speedFactor ?? basePlaybackRate
+  }, [currentTime, playbackEdits, basePlaybackRate])
 
   const handleSeekToSegment = (segment: AnalysisSegment) => {
     setSelectedSegmentId(segment.id)
@@ -262,11 +318,6 @@ function History(): JSX.Element {
         libraryId: selectedRecord.id,
       },
     })
-  }
-
-  const handleOpenInEditor = () => {
-    if (!selectedRecord) return
-    navigate(`/edit/${selectedRecord.id}`)
   }
 
   const handleDelete = async (id: string) => {
@@ -379,10 +430,19 @@ function History(): JSX.Element {
                       />
                     )}
 
+                    <VideoFeedbackOverlay
+                      visible={shouldShowVideoFeedbackOverlay}
+                      startTimeLabel={videoOverlaySegment ? formatTime(videoOverlaySegment.startTime) : undefined}
+                      nextStepsTitle={t('history.nextSteps')}
+                      feedbackItems={overlayFeedbackItems}
+                      nextStepItems={overlayNextStepItems}
+                      emptyLabel={t('history.feedbackEmpty')}
+                    />
+
                     <div className="video-controls-overlay">
                       <Controls
                         isPlaying={isPlaying}
-                        playbackRate={playbackRate}
+                        playbackRate={basePlaybackRate}
                         currentTime={currentTime}
                         duration={duration}
                         onPlay={handlePlay}
@@ -402,9 +462,6 @@ function History(): JSX.Element {
                     <button type="button" className="history-action-btn history-action-btn--edit" onClick={handleOpenInAnalyze}>
                       {t('history.openAnalyze')}
                     </button>
-                    <button type="button" className="history-action-btn history-action-btn--editor" onClick={handleOpenInEditor}>
-                      {t('history.openEditor')}
-                    </button>
                   </div>
 
                   {analysisSegments.length > 0 && (
@@ -418,6 +475,14 @@ function History(): JSX.Element {
                           onClick={() => setFollowPlayback((previous) => !previous)}
                         >
                           {t('analyze.segmentSelector.followPlayback')}
+                        </button>
+                        <button
+                          type="button"
+                          className={`analyze-segment-selector__btn ${isVideoFeedbackOverlayEnabled ? 'active' : ''}`.trim()}
+                          aria-pressed={isVideoFeedbackOverlayEnabled}
+                          onClick={() => setIsVideoFeedbackOverlayEnabled((previous) => !previous)}
+                        >
+                          {t('analyze.segmentSelector.inVideoFeedback')}
                         </button>
                       </div>
                       <div className="analyze-segment-selector__chips">

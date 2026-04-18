@@ -115,3 +115,57 @@ export const MenuIcon: React.FC<IconProps> = ({ width = 24, height = 24, classNa
     <line x1="3" y1="18" x2="21" y2="18" />
   </svg>
 )
+
+// Camera / Recording Controls
+export const CameraFrontIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} stroke="currentColor" fill="none" strokeWidth={1.8}>
+    <rect x="3.5" y="6.5" width="17" height="11" rx="2.5" />
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M8.8 19.5h6.4" strokeLinecap="round" />
+    <path d="M7.3 3.8h9.4" strokeLinecap="round" />
+  </svg>
+)
+
+export const CameraRearIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} stroke="currentColor" fill="none" strokeWidth={1.8}>
+    <rect x="3.5" y="6.5" width="17" height="11" rx="2.5" />
+    <rect x="9.3" y="9" width="5.4" height="5.4" rx="1.2" />
+    <path d="M8.8 19.5h6.4" strokeLinecap="round" />
+    <path d="M16.8 8.3a3.2 3.2 0 0 1 3 3.2" strokeLinecap="round" />
+  </svg>
+)
+
+export const PortraitIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} stroke="currentColor" fill="none" strokeWidth={1.8}>
+    <rect x="8" y="3.5" width="8" height="17" rx="2" />
+    <circle cx="12" cy="17.7" r="0.8" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+export const LandscapeIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} stroke="currentColor" fill="none" strokeWidth={1.8}>
+    <rect x="3.5" y="8" width="17" height="8" rx="2" />
+    <circle cx="17.7" cy="12" r="0.8" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+export const RecordIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} fill="none" stroke="currentColor" strokeWidth={1.8}>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="4.8" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+export const StopIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} fill="none" stroke="currentColor" strokeWidth={1.8}>
+    <rect x="4.2" y="4.2" width="15.6" height="15.6" rx="3.2" />
+    <rect x="8.2" y="8.2" width="7.6" height="7.6" rx="1.5" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+export const CloseIcon: React.FC<IconProps> = ({ width = 24, height = 24, className = '' }) => (
+  <svg viewBox="0 0 24 24" width={width} height={height} className={className} stroke="currentColor" fill="none" strokeWidth={2}>
+    <line x1="6" y1="6" x2="18" y2="18" strokeLinecap="round" />
+    <line x1="18" y1="6" x2="6" y2="18" strokeLinecap="round" />
+  </svg>
+)
