@@ -1125,7 +1125,7 @@ function Analyze({
           </div>
 
           <div className="analyze-workspace-mode-wrap">
-            <div className="analyze-workspace-mode" role="tablist" aria-label="Workspace mode">
+            <div className="analyze-workspace-mode" role="tablist" aria-label={t('analyze.workspaceModeAria')}>
               <button
                 type="button"
                 role="tab"
@@ -1214,7 +1214,7 @@ function Analyze({
 
           {workspaceMode === 'draw' && showDrawingCanvas && !isMobile && (
             <div className="analyze-inline-draw-editor">
-              <div className="analyze-inline-tools" role="toolbar" aria-label="Drawing tools">
+              <div className="analyze-inline-tools" role="toolbar" aria-label={t('analyze.drawingToolsAria')}>
                 <button
                   type="button"
                   className={tool === 'line' ? 'active' : ''}

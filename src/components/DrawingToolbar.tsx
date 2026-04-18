@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useDeviceType } from '../hooks/useDeviceType'
+import { useI18n } from '../i18n/I18nProvider'
 import { IconButton } from './ui/Button'
 import * as Icons from './ui/Icons'
 
@@ -39,6 +40,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   opacity = 1,
   onOpacityChange,
 }) => {
+  const { t } = useI18n()
   const deviceType = useDeviceType()
   const [expandedSection, setExpandedSection] = useState<'tools' | 'properties' | null>('tools')
 
@@ -46,11 +48,11 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   const isDesktop = deviceType === 'desktop'
 
   const toolOptions: Array<{ id: DrawingTool; icon: React.ReactNode; label: string }> = [
-    { id: 'line', icon: <Icons.LineIcon />, label: 'Line' },
-    { id: 'circle', icon: <Icons.CircleIcon />, label: 'Circle' },
-    { id: 'rectangle', icon: <Icons.RectangleIcon />, label: 'Rectangle' },
-    { id: 'arrow', icon: <Icons.ArrowIcon />, label: 'Arrow' },
-    { id: 'eraser', icon: <Icons.EraserIcon />, label: 'Eraser' },
+    { id: 'line', icon: <Icons.LineIcon />, label: t('drawing.tool.line') },
+    { id: 'circle', icon: <Icons.CircleIcon />, label: t('drawing.tool.circle') },
+    { id: 'rectangle', icon: <Icons.RectangleIcon />, label: t('drawing.tool.rectangle') },
+    { id: 'arrow', icon: <Icons.ArrowIcon />, label: t('drawing.tool.arrow') },
+    { id: 'eraser', icon: <Icons.EraserIcon />, label: t('drawing.tool.eraser') },
   ]
 
   // Mobile: Bottom drawer interface
@@ -63,13 +65,13 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
             className={`drawing-toolbar__tab ${expandedSection === 'tools' ? 'active' : ''}`}
             onClick={() => setExpandedSection(expandedSection === 'tools' ? null : 'tools')}
           >
-            🎨 Tools
+            {t('drawing.tabs.tools')}
           </button>
           <button
             className={`drawing-toolbar__tab ${expandedSection === 'properties' ? 'active' : ''}`}
             onClick={() => setExpandedSection(expandedSection === 'properties' ? null : 'properties')}
           >
-            ⚙️ Properties
+            {t('drawing.tabs.properties')}
           </button>
         </div>
 
@@ -98,7 +100,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
               <div className="drawing-toolbar__actions">
                 <IconButton
                   icon={<Icons.TrashIcon />}
-                  label="Delete"
+                  label={t('drawing.action.delete')}
                   size="md"
                   onClick={onDeleteSelected}
                   disabled={!canDeleteSelected}
@@ -115,7 +117,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
             {/* Color picker */}
             {onColorChange && (
               <div className="drawing-toolbar__property">
-                <label className="drawing-toolbar__property-label">Color</label>
+                <label className="drawing-toolbar__property-label">{t('drawing.property.color')}</label>
                 <div className="drawing-toolbar__color-grid">
                   {COLORS.map((c) => (
                     <button
@@ -135,7 +137,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
             {/* Stroke width */}
             {onStrokeWidthChange && (
               <div className="drawing-toolbar__property">
-                <label className="drawing-toolbar__property-label">Stroke Width: {strokeWidth}px</label>
+                <label className="drawing-toolbar__property-label">{t('drawing.property.strokeWidth', { width: strokeWidth })}</label>
                 <div className="drawing-toolbar__slider-container">
                   <input
                     type="range"
@@ -164,7 +166,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
             {/* Opacity */}
             {onOpacityChange && (
               <div className="drawing-toolbar__property">
-                <label className="drawing-toolbar__property-label">Opacity: {Math.round(opacity * 100)}%</label>
+                <label className="drawing-toolbar__property-label">{t('drawing.property.opacity', { value: Math.round(opacity * 100) })}</label>
                 <div className="drawing-toolbar__slider-container">
                   <input
                     type="range"
@@ -189,7 +191,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
     <div className={`drawing-toolbar drawing-toolbar--${isDesktop ? 'desktop' : 'tablet'}`}>
       {/* Tool selection */}
       <div className="drawing-toolbar__section">
-        <h3 className="drawing-toolbar__section-title">Tools</h3>
+        <h3 className="drawing-toolbar__section-title">{t('drawing.section.tools')}</h3>
         <div className={`drawing-toolbar__tools ${isDesktop ? 'vertical' : 'horizontal'}`}>
           {toolOptions.map((tool) => (
             <IconButton
@@ -207,11 +209,11 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
       {/* Color and properties */}
       <div className="drawing-toolbar__section">
-        <h3 className="drawing-toolbar__section-title">Properties</h3>
+        <h3 className="drawing-toolbar__section-title">{t('drawing.section.properties')}</h3>
 
         {onColorChange && (
           <div className="drawing-toolbar__property">
-            <label className="drawing-toolbar__property-label">Color</label>
+            <label className="drawing-toolbar__property-label">{t('drawing.property.color')}</label>
             <div className={`drawing-toolbar__color-grid ${isDesktop ? 'vertical' : ''}`}>
               {COLORS.map((c) => (
                 <button
@@ -228,7 +230,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
         {onStrokeWidthChange && (
           <div className="drawing-toolbar__property">
-            <label className="drawing-toolbar__property-label">Stroke: {strokeWidth}px</label>
+            <label className="drawing-toolbar__property-label">{t('drawing.property.stroke', { width: strokeWidth })}</label>
             <div className="drawing-toolbar__quick-widths">
               {STROKE_WIDTHS.map((w) => (
                 <button
@@ -246,7 +248,7 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
 
         {onOpacityChange && (
           <div className="drawing-toolbar__property">
-            <label className="drawing-toolbar__property-label">Opacity: {Math.round(opacity * 100)}%</label>
+            <label className="drawing-toolbar__property-label">{t('drawing.property.opacity', { value: Math.round(opacity * 100) })}</label>
             <input
               type="range"
               min="0"
@@ -263,11 +265,11 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
       {/* Actions */}
       {onDeleteSelected && (
         <div className="drawing-toolbar__section">
-          <h3 className="drawing-toolbar__section-title">Actions</h3>
+          <h3 className="drawing-toolbar__section-title">{t('drawing.section.actions')}</h3>
           <div className={`drawing-toolbar__actions ${isDesktop ? 'vertical' : ''}`}>
             <IconButton
               icon={<Icons.TrashIcon />}
-              label="Delete"
+              label={t('drawing.action.delete')}
               size={isDesktop ? 'md' : 'sm'}
               onClick={onDeleteSelected}
               disabled={!canDeleteSelected}

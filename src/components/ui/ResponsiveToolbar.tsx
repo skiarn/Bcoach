@@ -1,5 +1,6 @@
 import React from 'react'
 import { useDeviceType } from '../../hooks/useDeviceType'
+import { useI18n } from '../../i18n/I18nProvider'
 import { IconButton } from './Button'
 
 export interface ToolbarGroup {
@@ -35,6 +36,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
   groups,
   alignment = 'start',
 }) => {
+  const { t } = useI18n()
   const deviceType = useDeviceType()
 
   const isDesktop = deviceType === 'desktop'
@@ -48,7 +50,7 @@ export const ResponsiveToolbar: React.FC<ResponsiveToolbarProps> = ({
 
     return (
       <div className="responsive-toolbar responsive-toolbar--mobile-compact">
-        <div className="responsive-toolbar__mobile-scroll" role="toolbar" aria-label="Playback tools">
+        <div className="responsive-toolbar__mobile-scroll" role="toolbar" aria-label={t('controls.playbackToolsAria')}>
           {items.map((item) => (
             <IconButton
               key={`${item.groupId}-${item.id}`}
